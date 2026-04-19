@@ -13,6 +13,7 @@ setup(
         "PyQt6>=6.5",
         "pyvista>=0.43",
         "pyvistaqt>=0.11",
+        "rdkit>=2023.9",
     ],
     entry_points={
         "console_scripts": [

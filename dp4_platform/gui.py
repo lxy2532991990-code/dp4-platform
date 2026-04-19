@@ -161,6 +161,7 @@ try:
         QPushButton,
         QScrollArea,
         QSplitter,
+        QTabWidget,
         QTableWidget,
         QTableWidgetItem,
         QVBoxLayout,
@@ -176,6 +177,14 @@ except ImportError:  # pragma: no cover
         from dp4_platform.structure3d import StructureView
     except ImportError:
         StructureView = None  # type: ignore[assignment]
+
+try:
+    from .structure2d import Structure2DView
+except ImportError:  # pragma: no cover
+    try:
+        from dp4_platform.structure2d import Structure2DView
+    except ImportError:
+        Structure2DView = None  # type: ignore[assignment]
 
 
 NONE_OPTION = "(none)"
@@ -329,6 +338,8 @@ class AutoAssignDialog(QDialog):
         self.worker: AutoAssignWorker | None = None
         self.saved_csv_path: str | None = None
         self.structure_view = None
+        self.structure_2d_view = None
+        self.structure_tabs = None
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -365,17 +376,29 @@ class AutoAssignDialog(QDialog):
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
+        self.structure_tabs = QTabWidget()
         if StructureView is not None:
             self.structure_view = StructureView()
             self.structure_view.atom_clicked.connect(self._on_atom_clicked)
-            splitter.addWidget(self.structure_view)
+            self.structure_tabs.addTab(self.structure_view, "3D")
         else:
             placeholder = QLabel(
                 "未安装 pyvista / pyvistaqt，\n无法显示 3D 结构。\n"
                 "请执行：pip install pyvista pyvistaqt"
             )
             placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            splitter.addWidget(placeholder)
+            self.structure_tabs.addTab(placeholder, "3D")
+
+        if Structure2DView is not None:
+            self.structure_2d_view = Structure2DView()
+            self.structure_2d_view.atom_clicked.connect(self._on_atom_clicked)
+            self.structure_tabs.addTab(self.structure_2d_view, "2D")
+        else:
+            placeholder = QLabel("RDKit 未安装，无法生成二维结构。")
+            placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.structure_tabs.addTab(placeholder, "2D")
+
+        splitter.addWidget(self.structure_tabs)
 
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
@@ -447,6 +470,13 @@ class AutoAssignDialog(QDialog):
         buttons.addWidget(self.btn_save)
         outer.addLayout(buttons)
 
+    def _structure_views(self) -> list[object]:
+        return [
+            view
+            for view in (self.structure_view, self.structure_2d_view)
+            if view is not None
+        ]
+
     def closeEvent(self, event) -> None:  # noqa: N802 (Qt override)
         if self.structure_view is not None:
             self.structure_view.close_plotter()
@@ -459,8 +489,9 @@ class AutoAssignDialog(QDialog):
         def _refresh() -> None:
             self.updateGeometry()
             self.update()
+            for view in self._structure_views():
+                view.update()
             if self.structure_view is not None:
-                self.structure_view.update()
                 try:
                     self.structure_view.plotter.render()
                 except Exception:
@@ -535,13 +566,13 @@ class AutoAssignDialog(QDialog):
         self._populate_peak_lists(exp_shifts_by_nucleus)
         self._populate_table()
 
-        if self.structure_view is not None:
-            self.structure_view.set_structure(
+        for view in self._structure_views():
+            view.set_structure(
                 self.coordinates,
                 self.elements,
                 self._active_nuclei(),
             )
-            self.structure_view.set_assigned_atoms(self._current_assigned_atoms())
+            view.set_assigned_atoms(self._current_assigned_atoms())
 
         self.btn_save.setEnabled(bool(self.rows))
 
@@ -641,16 +672,16 @@ class AutoAssignDialog(QDialog):
                 self.rows[row_index].exp_shift_ppm = None
                 self._refresh_error_for_row(row_index)
                 self._apply_row_confidence_color(row_index, self.rows[row_index])
-                if self.structure_view is not None:
-                    self.structure_view.set_assigned_atoms(self._current_assigned_atoms())
+                for view in self._structure_views():
+                    view.set_assigned_atoms(self._current_assigned_atoms())
                 return
             self.rows[row_index].exp_shift_ppm = value
         else:
             self.rows[row_index].exp_shift_ppm = None
         self._refresh_error_for_row(row_index)
         self._apply_row_confidence_color(row_index, self.rows[row_index])
-        if self.structure_view is not None:
-            self.structure_view.set_assigned_atoms(self._current_assigned_atoms())
+        for view in self._structure_views():
+            view.set_assigned_atoms(self._current_assigned_atoms())
 
     def _on_atom_clicked(self, atom_id: int) -> None:
         for row_index, row in enumerate(self.rows):
@@ -665,17 +696,17 @@ class AutoAssignDialog(QDialog):
             self.table.blockSignals(False)
             self.table.scrollToItem(self.table.item(row_index, 0))
             break
-        if self.structure_view is not None:
-            self.structure_view.set_highlighted_atom(atom_id)
+        for view in self._structure_views():
+            view.set_highlighted_atom(atom_id)
 
     def _on_row_selection_changed(self) -> None:
         row_index = self.table.currentRow()
         if row_index < 0 or row_index >= len(self.rows):
-            if self.structure_view is not None:
-                self.structure_view.set_highlighted_atom(None)
+            for view in self._structure_views():
+                view.set_highlighted_atom(None)
             return
-        if self.structure_view is not None:
-            self.structure_view.set_highlighted_atom(self.rows[row_index].atom_id)
+        for view in self._structure_views():
+            view.set_highlighted_atom(self.rows[row_index].atom_id)
 
     def _on_peak_clicked(self, item: QListWidgetItem, nucleus: str) -> None:
         row_index = self.table.currentRow()
@@ -703,8 +734,8 @@ class AutoAssignDialog(QDialog):
             self.table.blockSignals(False)
         self._refresh_error_for_row(row_index)
         self._apply_row_confidence_color(row_index, row)
-        if self.structure_view is not None:
-            self.structure_view.set_assigned_atoms(self._current_assigned_atoms())
+        for view in self._structure_views():
+            view.set_assigned_atoms(self._current_assigned_atoms())
 
     def _save_csv(self) -> None:
         path, _ = QFileDialog.getSaveFileName(

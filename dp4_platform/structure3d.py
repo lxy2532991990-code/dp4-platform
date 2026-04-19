@@ -12,20 +12,13 @@ from pyvistaqt import QtInteractor
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QVBoxLayout, QWidget
 
-
-ELEMENT_COLORS: dict[str, tuple[float, float, float]] = {
-    "H": (0.90, 0.90, 0.90),
-    "C": (0.25, 0.25, 0.25),
-    "N": (0.19, 0.31, 0.97),
-    "O": (0.94, 0.16, 0.16),
-    "F": (0.56, 0.88, 0.31),
-    "P": (1.00, 0.50, 0.00),
-    "S": (1.00, 1.00, 0.19),
-    "Cl": (0.12, 0.94, 0.12),
-    "Br": (0.65, 0.16, 0.16),
-    "I": (0.58, 0.00, 0.58),
-}
-DEFAULT_COLOR = (0.55, 0.55, 0.55)
+from .structure_model import (
+    ASSIGNED_COLOR,
+    DEFAULT_COLOR,
+    ELEMENT_COLORS,
+    HIGHLIGHT_COLOR,
+    infer_bonds,
+)
 
 DISPLAY_RADIUS: dict[str, float] = {
     "H": 0.22,
@@ -40,25 +33,6 @@ DISPLAY_RADIUS: dict[str, float] = {
     "I": 0.50,
 }
 DEFAULT_RADIUS = 0.32
-
-COVALENT_RADIUS: dict[str, float] = {
-    "H": 0.31,
-    "C": 0.76,
-    "N": 0.71,
-    "O": 0.66,
-    "F": 0.57,
-    "P": 1.07,
-    "S": 1.05,
-    "Cl": 1.02,
-    "Br": 1.20,
-    "I": 1.39,
-}
-DEFAULT_COVALENT = 0.80
-BOND_TOLERANCE = 0.40
-
-HIGHLIGHT_COLOR = (1.00, 0.85, 0.10)
-ASSIGNED_COLOR = (0.25, 0.75, 0.35)
-
 
 class StructureView(QWidget):
     """Embeddable 3D viewer that renders atoms as pickable spheres.
@@ -252,21 +226,13 @@ class StructureView(QWidget):
     def _draw_bonds(self) -> None:
         atom_ids = list(self._coordinates.keys())
         points = np.array([self._coordinates[aid] for aid in atom_ids])
-        n = len(atom_ids)
-        if n < 2:
+        if len(atom_ids) < 2:
             return
-        lines: list[list[int]] = []
         point_index: dict[int, int] = {aid: idx for idx, aid in enumerate(atom_ids)}
-        for i in range(n):
-            for j in range(i + 1, n):
-                ei = self._elements.get(atom_ids[i], "C")
-                ej = self._elements.get(atom_ids[j], "C")
-                ri = COVALENT_RADIUS.get(ei, DEFAULT_COVALENT)
-                rj = COVALENT_RADIUS.get(ej, DEFAULT_COVALENT)
-                max_bond = ri + rj + BOND_TOLERANCE
-                dist = float(np.linalg.norm(points[i] - points[j]))
-                if 0.4 < dist < max_bond:
-                    lines.append([2, point_index[atom_ids[i]], point_index[atom_ids[j]]])
+        lines = [
+            [2, point_index[atom_a], point_index[atom_b]]
+            for atom_a, atom_b in infer_bonds(self._coordinates, self._elements)
+        ]
         if not lines:
             return
         poly = pv.PolyData(points)
