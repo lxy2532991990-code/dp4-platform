@@ -9,3 +9,11 @@ tests_runtime/
 *.swp
 *.tmp
 .DS_Store
+
+# 忽略 examples 目录中的输出文件
+examples/*/opt_conf/
+examples/*/nmr_opt_*/
+examples/*/*.out
+examples/*/*.log
+examples/*/*.xyz
+examples/*/*.inp
