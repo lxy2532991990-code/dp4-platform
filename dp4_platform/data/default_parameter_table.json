@@ -1,0 +1,23 @@
+{
+  "description": "Default linear shielding-to-shift parameters for the standalone DP4 workflow. Replace with project-specific values when available.",
+  "nuclei": {
+    "1H": {
+      "intercept": 31.68,
+      "slope": -0.97,
+      "error_model": {
+        "distribution": "normal",
+        "mean": 0.0,
+        "stddev": 0.18
+      }
+    },
+    "13C": {
+      "intercept": 181.4,
+      "slope": -1.0,
+      "error_model": {
+        "distribution": "normal",
+        "mean": 0.0,
+        "stddev": 2.2
+      }
+    }
+  }
+}

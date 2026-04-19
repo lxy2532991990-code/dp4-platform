@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+tests/_tmp/
+dp4_results/
+tests_runtime/
+.venv/
+.uv-cache/
+.vscode/
+*.swp
+*.tmp
+.DS_Store
