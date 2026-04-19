@@ -17,6 +17,7 @@ from .structure_model import (
     DEFAULT_COLOR,
     ELEMENT_COLORS,
     HIGHLIGHT_COLOR,
+    RELATED_HIGHLIGHT_COLOR,
     infer_bonds,
 )
 
@@ -62,6 +63,7 @@ class StructureView(QWidget):
         self._actor_by_atom: dict[int, object] = {}
         self._atom_by_actor_id: dict[int, int] = {}
         self._highlighted_atom: int | None = None
+        self._related_atoms: set[int] = set()
         self._assigned_atoms: set[int] = set()
         self._closed: bool = False
 
@@ -89,6 +91,7 @@ class StructureView(QWidget):
         self._actor_by_atom.clear()
         self._atom_by_actor_id.clear()
         self._highlighted_atom = None
+        self._related_atoms = set()
         self._assigned_atoms = set()
 
     def set_structure(
@@ -181,6 +184,19 @@ class StructureView(QWidget):
             self._apply_color(atom_id)
         self._safe_render()
 
+    def set_related_atoms(self, atom_ids: Iterable[int]) -> None:
+        if self._closed:
+            return
+        new_set = set(atom_ids)
+        changed = new_set.symmetric_difference(self._related_atoms)
+        self._related_atoms = new_set
+        if self._highlighted_atom is not None:
+            changed.add(self._highlighted_atom)
+        for atom_id in changed:
+            self._apply_color(atom_id)
+        if changed:
+            self._safe_render()
+
     def set_assigned_atoms(self, atom_ids: Iterable[int]) -> None:
         if self._closed:
             return
@@ -214,6 +230,8 @@ class StructureView(QWidget):
         element = self._elements.get(atom_id, "")
         if atom_id == self._highlighted_atom:
             color = HIGHLIGHT_COLOR
+        elif atom_id in self._related_atoms:
+            color = RELATED_HIGHLIGHT_COLOR
         elif atom_id in self._assigned_atoms:
             color = ASSIGNED_COLOR
         else:

@@ -5,6 +5,8 @@ dp4_results/
 tests_runtime/
 .venv/
 .uv-cache/
+.tmp/
+*.egg-info/
 .vscode/
 *.swp
 *.tmp

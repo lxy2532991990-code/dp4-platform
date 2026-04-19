@@ -104,6 +104,7 @@ if __package__ in (None, ""):
         discover_candidate_files,
     )
     from dp4_platform.pipeline import DP4Pipeline
+    from dp4_platform.structure_model import build_c_h_adjacency
 else:
     from .autoassign import (
         AutoAssignRow,
@@ -133,6 +134,7 @@ else:
         discover_candidate_files,
     )
     from .pipeline import DP4Pipeline
+    from .structure_model import build_c_h_adjacency
 
 try:
     from PyQt6.QtCore import Qt, QThread, pyqtSignal
@@ -335,6 +337,9 @@ class AutoAssignDialog(QDialog):
         self.elements: dict[int, str] = {}
         self.coordinates: dict[int, tuple[float, float, float]] = {}
         self.rows: list[AutoAssignRow] = []
+        self.hydrogens_by_carbon: dict[int, list[int]] = {}
+        self.carbon_by_hydrogen: dict[int, int] = {}
+        self._focused_row_indices: set[int] | None = None
         self.worker: AutoAssignWorker | None = None
         self.saved_csv_path: str | None = None
         self.structure_view = None
@@ -371,6 +376,18 @@ class AutoAssignDialog(QDialog):
         self.status_label = QLabel("")
         self.status_label.setWordWrap(True)
         top_row.addWidget(self.status_label, 3, 0, 1, 3)
+
+        top_row.addWidget(QLabel("Assignment mode"), 4, 0)
+        self.cmb_assignment_mode = QComboBox()
+        self.cmb_assignment_mode.addItem("13C", "13C")
+        self.cmb_assignment_mode.addItem("1H", "1H")
+        self.cmb_assignment_mode.currentIndexChanged.connect(self._on_assignment_mode_changed)
+        top_row.addWidget(self.cmb_assignment_mode, 4, 1)
+
+        self.btn_show_all_rows = QPushButton("Show all rows")
+        self.btn_show_all_rows.clicked.connect(self._clear_table_focus)
+        self.btn_show_all_rows.setEnabled(False)
+        top_row.addWidget(self.btn_show_all_rows, 4, 3)
 
         outer.addLayout(top_row)
 
@@ -477,6 +494,120 @@ class AutoAssignDialog(QDialog):
             if view is not None
         ]
 
+    def _assignment_mode(self) -> str:
+        value = self.cmb_assignment_mode.currentData()
+        return str(value) if value in ("1H", "13C") else "13C"
+
+    def _structure_pick_nuclei(self) -> tuple[str, ...]:
+        if self._assignment_mode() == "1H":
+            return ("1H", "13C")
+        return ("13C",)
+
+    def _refresh_assignment_mode_options(self) -> None:
+        available = [
+            nucleus
+            for nucleus in ("13C", "1H")
+            if self.predicted_by_nucleus.get(nucleus)
+        ]
+        if not available:
+            available = [nucleus for nucleus in ("13C", "1H") if nucleus in self._active_nuclei()]
+        if not available:
+            available = ["13C", "1H"]
+
+        current = self._assignment_mode()
+        selected = current if current in available else ("13C" if "13C" in available else available[0])
+
+        self.cmb_assignment_mode.blockSignals(True)
+        try:
+            self.cmb_assignment_mode.clear()
+            for nucleus in available:
+                self.cmb_assignment_mode.addItem(nucleus, nucleus)
+            index = self.cmb_assignment_mode.findData(selected)
+            self.cmb_assignment_mode.setCurrentIndex(index if index >= 0 else 0)
+        finally:
+            self.cmb_assignment_mode.blockSignals(False)
+
+    def _on_assignment_mode_changed(self) -> None:
+        self._clear_table_focus()
+        self._clear_table_selection()
+        self._clear_structure_highlights()
+        for view in self._structure_views():
+            view.set_active_nuclei(self._structure_pick_nuclei())
+
+    def _row_indices_for_atom(self, atom_id: int, nucleus: str | None = None) -> list[int]:
+        return [
+            row_index
+            for row_index, row in enumerate(self.rows)
+            if row.atom_id == atom_id and (nucleus is None or row.nucleus == nucleus)
+        ]
+
+    def _row_indices_for_atoms(self, atom_ids: list[int], nucleus: str) -> list[int]:
+        wanted = set(atom_ids)
+        return [
+            row_index
+            for row_index, row in enumerate(self.rows)
+            if row.nucleus == nucleus and row.atom_id in wanted
+        ]
+
+    def _select_table_row(self, row_index: int) -> None:
+        self.table.blockSignals(True)
+        try:
+            self.table.selectRow(row_index)
+        finally:
+            self.table.blockSignals(False)
+        self._apply_table_focus()
+        item = self.table.item(row_index, 0)
+        if item is not None:
+            self.table.scrollToItem(item)
+
+    def _clear_table_selection(self) -> None:
+        self.table.blockSignals(True)
+        try:
+            self.table.clearSelection()
+            self.table.setCurrentCell(-1, -1)
+        finally:
+            self.table.blockSignals(False)
+
+    def _focus_rows(self, row_indices: list[int], select_row: int | None = None) -> None:
+        self._focused_row_indices = set(row_indices) if row_indices else None
+        self._apply_table_focus()
+        if select_row is not None and 0 <= select_row < len(self.rows):
+            self._select_table_row(select_row)
+
+    def _clear_table_focus(self) -> None:
+        self._focused_row_indices = None
+        self._apply_table_focus()
+
+    def _apply_table_focus(self) -> None:
+        focused = self._focused_row_indices
+        for row_index in range(self.table.rowCount()):
+            self.table.setRowHidden(row_index, focused is not None and row_index not in focused)
+        self.btn_show_all_rows.setEnabled(focused is not None)
+
+    def _set_structure_highlights(
+        self,
+        primary_atom: int | None,
+        related_atoms: list[int] | set[int] | tuple[int, ...] = (),
+    ) -> None:
+        related = set(related_atoms)
+        if primary_atom is not None:
+            related.discard(primary_atom)
+        for view in self._structure_views():
+            if hasattr(view, "set_related_atoms"):
+                view.set_related_atoms(related)
+            view.set_highlighted_atom(primary_atom)
+
+    def _clear_structure_highlights(self) -> None:
+        self._set_structure_highlights(None, ())
+
+    def _highlight_for_row(self, row: AutoAssignRow) -> None:
+        if row.nucleus == "1H":
+            carbon_id = self.carbon_by_hydrogen.get(row.atom_id)
+            related = self.hydrogens_by_carbon.get(carbon_id, []) if carbon_id is not None else []
+            self._set_structure_highlights(row.atom_id, related)
+            return
+        self._set_structure_highlights(row.atom_id, ())
+
     def closeEvent(self, event) -> None:  # noqa: N802 (Qt override)
         if self.structure_view is not None:
             self.structure_view.close_plotter()
@@ -542,6 +673,10 @@ class AutoAssignDialog(QDialog):
         self.predicted_by_nucleus = payload.get("predicted", {})
         self.elements = payload.get("elements", {})
         self.coordinates = payload.get("coordinates", {})
+        self.hydrogens_by_carbon, self.carbon_by_hydrogen = build_c_h_adjacency(
+            self.coordinates,
+            self.elements,
+        )
 
         exp_shifts_by_nucleus: dict[str, list[float]] = {}
         if "1H" in self.predicted_by_nucleus:
@@ -554,6 +689,8 @@ class AutoAssignDialog(QDialog):
             exp_shifts_by_nucleus,
             elements=self.elements,
         )
+        self._focused_row_indices = None
+        self._refresh_assignment_mode_options()
 
         summary_bits = []
         for nucleus, peaks in exp_shifts_by_nucleus.items():
@@ -570,9 +707,12 @@ class AutoAssignDialog(QDialog):
             view.set_structure(
                 self.coordinates,
                 self.elements,
-                self._active_nuclei(),
+                self._structure_pick_nuclei(),
             )
             view.set_assigned_atoms(self._current_assigned_atoms())
+            if hasattr(view, "set_related_atoms"):
+                view.set_related_atoms(())
+            view.set_highlighted_atom(None)
 
         self.btn_save.setEnabled(bool(self.rows))
 
@@ -684,29 +824,50 @@ class AutoAssignDialog(QDialog):
             view.set_assigned_atoms(self._current_assigned_atoms())
 
     def _on_atom_clicked(self, atom_id: int) -> None:
-        for row_index, row in enumerate(self.rows):
-            if row.atom_id != atom_id:
-                continue
-            nucleus = row.nucleus
-            element = self.elements.get(atom_id, "")
-            if (element == "C" and nucleus != "13C") or (element == "H" and nucleus != "1H"):
-                continue
-            self.table.blockSignals(True)
-            self.table.selectRow(row_index)
-            self.table.blockSignals(False)
-            self.table.scrollToItem(self.table.item(row_index, 0))
-            break
-        for view in self._structure_views():
-            view.set_highlighted_atom(atom_id)
+        element = self.elements.get(atom_id, "")
+        mode = self._assignment_mode()
+
+        if mode == "1H":
+            if element == "C":
+                hydrogen_ids = self.hydrogens_by_carbon.get(atom_id, [])
+                row_indices = self._row_indices_for_atoms(hydrogen_ids, "1H")
+                self._focus_rows(row_indices, row_indices[0] if row_indices else None)
+                self._set_structure_highlights(atom_id, hydrogen_ids)
+                return
+            if element == "H":
+                carbon_id = self.carbon_by_hydrogen.get(atom_id)
+                hydrogen_ids = (
+                    self.hydrogens_by_carbon.get(carbon_id, [atom_id])
+                    if carbon_id is not None
+                    else [atom_id]
+                )
+                row_indices = self._row_indices_for_atoms(hydrogen_ids, "1H")
+                selected = next(
+                    (idx for idx in row_indices if self.rows[idx].atom_id == atom_id),
+                    row_indices[0] if row_indices else None,
+                )
+                self._focus_rows(row_indices, selected)
+                self._set_structure_highlights(atom_id, hydrogen_ids)
+                return
+
+        if element == "C":
+            row_indices = self._row_indices_for_atom(atom_id, "13C")
+            self._clear_table_focus()
+            if row_indices:
+                self._select_table_row(row_indices[0])
+            self._set_structure_highlights(atom_id, ())
 
     def _on_row_selection_changed(self) -> None:
         row_index = self.table.currentRow()
         if row_index < 0 or row_index >= len(self.rows):
-            for view in self._structure_views():
-                view.set_highlighted_atom(None)
+            self._clear_structure_highlights()
             return
-        for view in self._structure_views():
-            view.set_highlighted_atom(self.rows[row_index].atom_id)
+        row = self.rows[row_index]
+        if self._assignment_mode() == "1H" and row.nucleus == "1H":
+            carbon_id = self.carbon_by_hydrogen.get(row.atom_id)
+            hydrogen_ids = self.hydrogens_by_carbon.get(carbon_id, []) if carbon_id is not None else [row.atom_id]
+            self._focus_rows(self._row_indices_for_atoms(hydrogen_ids, "1H"))
+        self._highlight_for_row(row)
 
     def _on_peak_clicked(self, item: QListWidgetItem, nucleus: str) -> None:
         row_index = self.table.currentRow()

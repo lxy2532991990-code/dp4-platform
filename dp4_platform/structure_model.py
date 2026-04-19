@@ -19,6 +19,7 @@ ELEMENT_COLORS: dict[str, tuple[float, float, float]] = {
 }
 DEFAULT_COLOR = (0.55, 0.55, 0.55)
 HIGHLIGHT_COLOR = (1.00, 0.85, 0.10)
+RELATED_HIGHLIGHT_COLOR = (1.00, 0.93, 0.45)
 ASSIGNED_COLOR = (0.25, 0.75, 0.35)
 
 COVALENT_RADIUS: dict[str, float] = {
@@ -55,3 +56,27 @@ def infer_bonds(
             if 0.4 < distance < max_bond:
                 bonds.append((atom_a, atom_b))
     return bonds
+
+
+def build_c_h_adjacency(
+    coordinates: dict[int, tuple[float, float, float]],
+    elements: dict[int, str],
+) -> tuple[dict[int, list[int]], dict[int, int]]:
+    """Return direct C-H relationships inferred from the structure geometry."""
+    hydrogens_by_carbon: dict[int, list[int]] = {}
+    carbon_by_hydrogen: dict[int, int] = {}
+    for atom_a, atom_b in infer_bonds(coordinates, elements):
+        element_a = elements.get(atom_a, "")
+        element_b = elements.get(atom_b, "")
+        if element_a == "C" and element_b == "H":
+            carbon_id, hydrogen_id = atom_a, atom_b
+        elif element_a == "H" and element_b == "C":
+            carbon_id, hydrogen_id = atom_b, atom_a
+        else:
+            continue
+        hydrogens_by_carbon.setdefault(carbon_id, []).append(hydrogen_id)
+        carbon_by_hydrogen[hydrogen_id] = carbon_id
+
+    for hydrogen_ids in hydrogens_by_carbon.values():
+        hydrogen_ids.sort()
+    return hydrogens_by_carbon, carbon_by_hydrogen
