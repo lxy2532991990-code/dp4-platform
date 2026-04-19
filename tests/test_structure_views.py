@@ -4,7 +4,13 @@ import unittest
 from unittest.mock import patch
 
 from dp4_platform.structure_model import build_c_h_adjacency, infer_bonds
-from dp4_platform.structure2d import Chem, compute_rdkit_2d_coordinates
+from dp4_platform.structure2d import (
+    Chem,
+    Structure2DView,
+    Point3D,
+    _terminal_group_label,
+    compute_rdkit_2d_coordinates,
+)
 
 
 class StructureModelTests(unittest.TestCase):
@@ -73,6 +79,100 @@ class StructureModelTests(unittest.TestCase):
 
 
 class Structure2DTests(unittest.TestCase):
+    def _methoxy_mol(self, attachment_x: float) -> tuple["Chem.RWMol", int, int, list[int]]:
+        mol = Chem.RWMol()
+        attachment_idx = mol.AddAtom(Chem.Atom("C"))
+        oxygen_idx = mol.AddAtom(Chem.Atom("O"))
+        methyl_idx = mol.AddAtom(Chem.Atom("C"))
+        hydrogen_indices = [mol.AddAtom(Chem.Atom("H")) for _ in range(3)]
+        mol.AddBond(attachment_idx, oxygen_idx, Chem.BondType.SINGLE)
+        mol.AddBond(oxygen_idx, methyl_idx, Chem.BondType.SINGLE)
+        for hydrogen_idx in hydrogen_indices:
+            mol.AddBond(methyl_idx, hydrogen_idx, Chem.BondType.SINGLE)
+
+        methyl_x = -1.0 if attachment_x > 0.0 else 1.0
+        conf = Chem.Conformer(mol.GetNumAtoms())
+        conf.SetAtomPosition(attachment_idx, Point3D(attachment_x, 0.0, 0.0))
+        conf.SetAtomPosition(oxygen_idx, Point3D(0.0, 0.0, 0.0))
+        conf.SetAtomPosition(methyl_idx, Point3D(methyl_x, 0.0, 0.0))
+        for offset, hydrogen_idx in enumerate(hydrogen_indices, start=1):
+            conf.SetAtomPosition(hydrogen_idx, Point3D(methyl_x, offset * 0.3, 0.0))
+        mol.AddConformer(conf)
+        return mol, oxygen_idx, methyl_idx, hydrogen_indices
+
+    @unittest.skipIf(Chem is None or Point3D is None, "RDKit is not installed")
+    def test_methoxy_group_uses_skeletal_methyl_endpoint(self) -> None:
+        mol, oxygen_idx, methyl_idx, hydrogen_indices = self._methoxy_mol(-1.0)
+
+        display_mol, orig_to_draw, labels, hidden = (
+            Structure2DView._build_display_mol_and_maps(None, mol)
+        )
+
+        self.assertNotIn(oxygen_idx, labels)
+        self.assertNotIn(methyl_idx, labels)
+        self.assertEqual(display_mol.GetNumAtoms(), 3)
+        self.assertIn(oxygen_idx, orig_to_draw)
+        self.assertIn(methyl_idx, orig_to_draw)
+        self.assertNotIn(methyl_idx, hidden)
+        for hydrogen_idx in hydrogen_indices:
+            self.assertEqual(hidden[hydrogen_idx], methyl_idx)
+
+    @unittest.skipIf(Chem is None or Point3D is None, "RDKit is not installed")
+    def test_terminal_methyl_group_uses_skeletal_endpoint(self) -> None:
+        mol = Chem.RWMol()
+        attachment_idx = mol.AddAtom(Chem.Atom("C"))
+        methyl_idx = mol.AddAtom(Chem.Atom("C"))
+        hydrogen_indices = [mol.AddAtom(Chem.Atom("H")) for _ in range(3)]
+        mol.AddBond(attachment_idx, methyl_idx, Chem.BondType.SINGLE)
+        for hydrogen_idx in hydrogen_indices:
+            mol.AddBond(methyl_idx, hydrogen_idx, Chem.BondType.SINGLE)
+        conf = Chem.Conformer(mol.GetNumAtoms())
+        conf.SetAtomPosition(attachment_idx, Point3D(0.0, 0.0, 0.0))
+        conf.SetAtomPosition(methyl_idx, Point3D(1.0, 0.0, 0.0))
+        for offset, hydrogen_idx in enumerate(hydrogen_indices, start=1):
+            conf.SetAtomPosition(hydrogen_idx, Point3D(1.0, offset * 0.3, 0.0))
+        mol.AddConformer(conf)
+
+        display_mol, orig_to_draw, labels, hidden = (
+            Structure2DView._build_display_mol_and_maps(None, mol)
+        )
+
+        self.assertEqual(labels, {})
+        self.assertEqual(display_mol.GetNumAtoms(), 2)
+        self.assertIn(methyl_idx, orig_to_draw)
+        for hydrogen_idx in hydrogen_indices:
+            self.assertEqual(hidden[hydrogen_idx], methyl_idx)
+
+    @unittest.skipIf(Chem is None or Point3D is None, "RDKit is not installed")
+    def test_terminal_group_label_keeps_attachment_atom_near_bond(self) -> None:
+        mol = Chem.RWMol()
+        oxygen_idx = mol.AddAtom(Chem.Atom("O"))
+        carbon_idx = mol.AddAtom(Chem.Atom("C"))
+        mol.AddBond(oxygen_idx, carbon_idx, Chem.BondType.SINGLE)
+        conf = Chem.Conformer(mol.GetNumAtoms())
+        conf.SetAtomPosition(oxygen_idx, Point3D(0.0, 0.0, 0.0))
+        conf.SetAtomPosition(carbon_idx, Point3D(1.0, 0.0, 0.0))
+        mol.AddConformer(conf)
+
+        label = _terminal_group_label(mol, mol.GetAtomWithIdx(oxygen_idx), "OH", "HO")
+
+        self.assertEqual(label, "HO")
+
+    @unittest.skipIf(Chem is None or Point3D is None, "RDKit is not installed")
+    def test_terminal_group_label_uses_default_when_neighbor_is_left(self) -> None:
+        mol = Chem.RWMol()
+        carbon_idx = mol.AddAtom(Chem.Atom("C"))
+        oxygen_idx = mol.AddAtom(Chem.Atom("O"))
+        mol.AddBond(carbon_idx, oxygen_idx, Chem.BondType.SINGLE)
+        conf = Chem.Conformer(mol.GetNumAtoms())
+        conf.SetAtomPosition(carbon_idx, Point3D(0.0, 0.0, 0.0))
+        conf.SetAtomPosition(oxygen_idx, Point3D(-1.0, 0.0, 0.0))
+        mol.AddConformer(conf)
+
+        label = _terminal_group_label(mol, mol.GetAtomWithIdx(carbon_idx), "OH", "HO")
+
+        self.assertEqual(label, "OH")
+
     @unittest.skipIf(Chem is None, "RDKit is not installed")
     def test_rdkit_2d_coordinates_preserve_atom_ids(self) -> None:
         coordinates = {
