@@ -3,8 +3,74 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 from pathlib import Path
+
+
+_QT_DLL_DIRECTORY_HANDLES = []
+
+
+def _enable_windows_dpi_awareness() -> None:
+    """Ask Windows to render native dialogs crisply on high-DPI displays."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        awareness_context_per_monitor_v2 = ctypes.c_void_p(-4)
+        if ctypes.windll.user32.SetProcessDpiAwarenessContext(awareness_context_per_monitor_v2):
+            return
+    except Exception:
+        pass
+    try:
+        import ctypes
+
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        return
+    except Exception:
+        pass
+    try:
+        import ctypes
+
+        ctypes.windll.user32.SetProcessDPIAware()
+    except Exception:
+        pass
+
+
+def _resolved_path_text(path: str) -> str:
+    try:
+        return str(Path(path).resolve()).casefold()
+    except (OSError, RuntimeError):
+        return path.casefold()
+
+
+def _prepare_qt_environment() -> None:
+    """Keep Qt startup stable when VS Code runs from an activated venv terminal."""
+    _enable_windows_dpi_awareness()
+    os.environ.setdefault("QT_API", "pyqt6")
+
+    executable = Path(sys.executable).resolve()
+    venv_scripts = executable.parent
+    if venv_scripts.name.lower() == "scripts" and executable.name.lower().startswith("python"):
+        venv_scripts_text = _resolved_path_text(str(venv_scripts))
+        path_parts = os.environ.get("PATH", "").split(os.pathsep)
+        os.environ["PATH"] = os.pathsep.join(
+            part for part in path_parts if part and _resolved_path_text(part) != venv_scripts_text
+        )
+
+    site_packages = venv_scripts.parent / "Lib" / "site-packages"
+    pyqt_qt = site_packages / "PyQt6" / "Qt6"
+    qt_bin = pyqt_qt / "bin"
+    qt_plugins = pyqt_qt / "plugins"
+    if qt_plugins.is_dir():
+        os.environ["QT_PLUGIN_PATH"] = str(qt_plugins)
+        os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = str(qt_plugins / "platforms")
+    if qt_bin.is_dir() and hasattr(os, "add_dll_directory"):
+        _QT_DLL_DIRECTORY_HANDLES.append(os.add_dll_directory(str(qt_bin)))
+
+
+_prepare_qt_environment()
 
 if __package__ in (None, ""):
     package_root = Path(__file__).resolve().parents[1]
@@ -113,6 +179,63 @@ except ImportError:  # pragma: no cover
 
 
 NONE_OPTION = "(none)"
+
+
+def _get_existing_directory_with_tk(title: str, initial_path: str) -> str:
+    script = (
+        "import sys\n"
+        "if sys.platform == 'win32':\n"
+        "    try:\n"
+        "        import ctypes\n"
+        "        if not ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4)):\n"
+        "            ctypes.windll.shcore.SetProcessDpiAwareness(2)\n"
+        "    except Exception:\n"
+        "        try:\n"
+        "            ctypes.windll.user32.SetProcessDPIAware()\n"
+        "        except Exception:\n"
+        "            pass\n"
+        "import tkinter as tk\n"
+        "from tkinter import filedialog\n"
+        "root = tk.Tk()\n"
+        "root.withdraw()\n"
+        "root.attributes('-topmost', True)\n"
+        "root.update()\n"
+        "try:\n"
+        "    value = filedialog.askdirectory(title=sys.argv[1], initialdir=sys.argv[2], mustexist=True)\n"
+        "finally:\n"
+        "    root.destroy()\n"
+        "if value:\n"
+        "    print(value, end='')\n"
+    )
+    creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    completed = subprocess.run(
+        [sys.executable, "-c", script, title, initial_path],
+        capture_output=True,
+        text=True,
+        creationflags=creationflags,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(completed.stderr.strip() or "Folder picker failed")
+    return completed.stdout.strip()
+
+
+def _get_existing_directory(parent: QWidget, title: str, start_path: str) -> str:
+    initial_path = start_path if start_path and os.path.isdir(start_path) else os.getcwd()
+    initial_path = os.path.abspath(initial_path)
+    if sys.platform == "win32":
+        try:
+            return _get_existing_directory_with_tk(title, initial_path)
+        except Exception:
+            pass
+    # Use static method instead of dialog object to avoid qtpy compatibility issues
+    # Don't set any options to use default native dialog
+    result = QFileDialog.getExistingDirectory(
+        parent,
+        title,
+        initial_path,
+        # options=QFileDialog.Option.ShowDirsOnly  # Usually not needed for getExistingDirectory
+    )
+    return result if result else ""
 
 
 class CandidateScanWorker(QThread):
@@ -684,7 +807,7 @@ class CandidateCard(QFrame):
         layout.addLayout(action_row)
 
     def _choose_directory(self) -> None:
-        value = QFileDialog.getExistingDirectory(self, "Select Candidate Folder", self.state.directory or os.getcwd())
+        value = _get_existing_directory(self, "Select Candidate Folder", self.state.directory)
         if value:
             self.state.directory = value
             self.refresh()
@@ -1357,7 +1480,7 @@ class MainWindow(QMainWindow):
             self._refresh_experimental_summary()
 
     def _choose_output_dir(self) -> None:
-        value = QFileDialog.getExistingDirectory(self, "Select Output Directory", self.ed_output.text() or os.getcwd())
+        value = _get_existing_directory(self, "Select Output Directory", self.ed_output.text())
         if value:
             self.ed_output.setText(value)
 
