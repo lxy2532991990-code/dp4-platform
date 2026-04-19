@@ -17,3 +17,4 @@ examples/*/*.out
 examples/*/*.log
 examples/*/*.xyz
 examples/*/*.inp
+examples/*/*.xlsx
