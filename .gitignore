@@ -11,6 +11,3 @@ tests_runtime/
 *.swp
 *.tmp
 .DS_Store
-
-# 忽略 examples 目录中的输出文件
-examples/

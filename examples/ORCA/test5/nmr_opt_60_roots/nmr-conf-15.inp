@@ -1,0 +1,13 @@
+!TPSS PCSSEG-2 AUTOAUX NMR CPCM(Methanol)
+
+%pal nprocs 60 end
+%maxcore 5000
+
+*XYZFILE 0 1 opt-conf-15.xyz
+
+%EPRNMR
+   NUCLEI = ALL C {SHIFT}
+   NUCLEI = ALL H {SHIFT}
+   TAU DOBSON
+END
+
