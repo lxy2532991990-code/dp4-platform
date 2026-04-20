@@ -55,7 +55,7 @@ def classify_gaussian_content(content: str, path: str, config: DP4Config) -> Orc
     has_frequencies = bool(frequencies)
     has_coordinates = _has_coordinates(content)
 
-    if has_shieldings and has_frequencies:
+    if has_shieldings and (has_frequencies or has_energy):
         role = FileRole.COMBINED
     elif has_shieldings:
         role = FileRole.NMR

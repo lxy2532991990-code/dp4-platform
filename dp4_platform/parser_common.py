@@ -35,6 +35,8 @@ _ATOMIC_SYMBOLS: dict[int, str] = {
     53: "I",
 }
 
+_STEM_SUFFIX_CONF_PATTERN = re.compile(r"(?:^|[_\-.])(\d+)$")
+
 
 def read_text(path: str) -> str:
     for encoding in ("utf-8", "utf-8-sig", "gbk", "latin-1", "utf-16"):
@@ -48,17 +50,36 @@ def read_text(path: str) -> str:
     raise ValueError(f"Unable to read file: {path}")
 
 
-def infer_conf_id(path: str, config: "DP4Config", fallback_index: int | None = None) -> int | None:
-    path_obj = Path(path)
-    candidates = [path_obj.stem, *(parent.name for parent in path_obj.parents if parent != path_obj.anchor)]
-    for candidate in candidates:
-        match = re.search(config.filename_pattern, candidate, re.IGNORECASE)
-        if not match:
+def _match_conf_id(candidate: str, pattern: str) -> int | None:
+    match = re.search(pattern, candidate, re.IGNORECASE)
+    if not match:
+        return None
+    for group in match.groups():
+        if group is None:
             continue
         try:
-            return int(match.group(1))
+            return int(group)
         except ValueError:
-            break
+            return None
+    return None
+
+
+def infer_conf_id(path: str, config: "DP4Config", fallback_index: int | None = None) -> int | None:
+    path_obj = Path(path)
+    stem_match = _match_conf_id(path_obj.stem, config.filename_pattern)
+    if stem_match is not None:
+        return stem_match
+
+    suffix_match = _STEM_SUFFIX_CONF_PATTERN.search(path_obj.stem)
+    if suffix_match:
+        return int(suffix_match.group(1))
+
+    for parent in path_obj.parents:
+        if parent == path_obj.anchor:
+            continue
+        parent_match = _match_conf_id(parent.name, config.filename_pattern)
+        if parent_match is not None:
+            return parent_match
     return fallback_index
 
 
