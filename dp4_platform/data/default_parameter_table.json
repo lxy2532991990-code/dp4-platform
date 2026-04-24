@@ -1,22 +1,127 @@
 {
-  "description": "Default linear shielding-to-shift parameters for the standalone DP4 workflow. Replace with project-specific values when available.",
+  "description": "DP4+ parameter table with multiple DFT theory levels. Each level provides linear scaling (intercept + slope * shielding) and t-distribution error models for scaled (sDP4+) and unscaled (uDP4+) data, differentiated by carbon hybridization.",
+  "default_level": "mPW1PW91/6-31+G**",
+  "levels": {
+    "mPW1PW91/6-31+G**": {
+      "source": "Grimblat, Zanardi, Sarotti, JOC 2015 (optimal level)",
+      "nuclei": {
+        "1H": {
+          "intercept": 31.8018,
+          "slope": -1.0936,
+          "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 0.1563, "nu": 14.18},
+          "unscaled_error": {
+            "on_sp2_carbon": {"mu": 0.35, "sigma": 0.34, "nu": 1.0},
+            "on_sp3_carbon": {"mu": 0.07, "sigma": 0.27, "nu": 3.7},
+            "default": {"mu": 0.20, "sigma": 0.30, "nu": 2.0}
+          }
+        },
+        "13C": {
+          "intercept": 191.4828,
+          "slope": -1.0533,
+          "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 1.6897, "nu": 11.38},
+          "unscaled_error": {
+            "sp2": {"mu": 5.5, "sigma": 5.5, "nu": 0.7},
+            "sp3": {"mu": -0.6, "sigma": 4.0, "nu": 3.1},
+            "default": {"mu": 2.0, "sigma": 5.0, "nu": 2.0}
+          }
+        }
+      }
+    },
+    "B3LYP/6-31G*": {
+      "source": "Grimblat, Zanardi, Sarotti, JOC 2015",
+      "nuclei": {
+        "1H": {
+          "intercept": 31.68,
+          "slope": -0.97,
+          "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 0.187, "nu": 14.18},
+          "unscaled_error": {
+            "on_sp2_carbon": {"mu": 0.35, "sigma": 0.34, "nu": 1.0},
+            "on_sp3_carbon": {"mu": 0.07, "sigma": 0.27, "nu": 3.7},
+            "default": {"mu": 0.20, "sigma": 0.30, "nu": 2.0}
+          }
+        },
+        "13C": {
+          "intercept": 181.4,
+          "slope": -1.0,
+          "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 2.306, "nu": 11.38},
+          "unscaled_error": {
+            "sp2": {"mu": 5.5, "sigma": 5.5, "nu": 0.7},
+            "sp3": {"mu": -0.6, "sigma": 4.0, "nu": 3.1},
+            "default": {"mu": 2.0, "sigma": 5.0, "nu": 2.0}
+          }
+        }
+      }
+    },
+    "B3LYP/6-31+G**": {
+      "source": "Grimblat, Zanardi, Sarotti, JOC 2015",
+      "nuclei": {
+        "1H": {
+          "intercept": 31.49,
+          "slope": -0.95,
+          "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 0.189, "nu": 14.18},
+          "unscaled_error": {
+            "on_sp2_carbon": {"mu": 0.35, "sigma": 0.34, "nu": 1.0},
+            "on_sp3_carbon": {"mu": 0.07, "sigma": 0.27, "nu": 3.7},
+            "default": {"mu": 0.20, "sigma": 0.30, "nu": 2.0}
+          }
+        },
+        "13C": {
+          "intercept": 185.1,
+          "slope": -1.02,
+          "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 2.643, "nu": 11.38},
+          "unscaled_error": {
+            "sp2": {"mu": 5.5, "sigma": 5.5, "nu": 0.7},
+            "sp3": {"mu": -0.6, "sigma": 4.0, "nu": 3.1},
+            "default": {"mu": 2.0, "sigma": 5.0, "nu": 2.0}
+          }
+        }
+      }
+    },
+    "PCM/mPW1PW91/6-31+G**": {
+      "source": "Grimblat, Zanardi, Sarotti, JOC 2015 (PCM solvent)",
+      "nuclei": {
+        "1H": {
+          "intercept": 31.48,
+          "slope": -1.06,
+          "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 0.163, "nu": 14.18},
+          "unscaled_error": {
+            "on_sp2_carbon": {"mu": 0.35, "sigma": 0.34, "nu": 1.0},
+            "on_sp3_carbon": {"mu": 0.07, "sigma": 0.27, "nu": 3.7},
+            "default": {"mu": 0.20, "sigma": 0.30, "nu": 2.0}
+          }
+        },
+        "13C": {
+          "intercept": 186.4,
+          "slope": -1.05,
+          "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 1.673, "nu": 11.38},
+          "unscaled_error": {
+            "sp2": {"mu": 5.5, "sigma": 5.5, "nu": 0.7},
+            "sp3": {"mu": -0.6, "sigma": 4.0, "nu": 3.1},
+            "default": {"mu": 2.0, "sigma": 5.0, "nu": 2.0}
+          }
+        }
+      }
+    }
+  },
   "nuclei": {
     "1H": {
       "intercept": 31.68,
       "slope": -0.97,
-      "error_model": {
-        "distribution": "normal",
-        "mean": 0.0,
-        "stddev": 0.18
+      "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 0.187, "nu": 14.18},
+      "unscaled_error": {
+        "on_sp2_carbon": {"mu": 0.35, "sigma": 0.34, "nu": 1.0},
+        "on_sp3_carbon": {"mu": 0.07, "sigma": 0.27, "nu": 3.7},
+        "default": {"mu": 0.20, "sigma": 0.30, "nu": 2.0}
       }
     },
     "13C": {
       "intercept": 181.4,
       "slope": -1.0,
-      "error_model": {
-        "distribution": "normal",
-        "mean": 0.0,
-        "stddev": 2.2
+      "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 2.306, "nu": 11.38},
+      "unscaled_error": {
+        "sp2": {"mu": 5.5, "sigma": 5.5, "nu": 0.7},
+        "sp3": {"mu": -0.6, "sigma": 4.0, "nu": 3.1},
+        "default": {"mu": 2.0, "sigma": 5.0, "nu": 2.0}
       }
     }
   }

@@ -40,6 +40,9 @@ _SHIELDING_TABLE_ROW_PATTERN = re.compile(
     r"^\s*(\d+)\s+([A-Z][a-z]?)\s+([-+]?\d+(?:\.\d+)?(?:[Ee][-+]?\d+)?)"
     r"(?:\s+[-+]?\d+(?:\.\d+)?(?:[Ee][-+]?\d+)?)?\s*$"
 )
+_METHOD_PATTERN = re.compile(r"^DFT level of theory\s*\.+\s*(.+)$", re.IGNORECASE | re.MULTILINE)
+_BASIS_PATTERN = re.compile(r"^Basis set\s*\.+\s*(.+)$", re.IGNORECASE | re.MULTILINE)
+_INPUT_METHOD_PATTERN = re.compile(r"!\s*(.+)$", re.MULTILINE)
 
 PROGRAM_MARKERS = (
     _ENERGY_PATTERN,
@@ -268,6 +271,27 @@ def _make_record(
     )
 
 
+def _extract_theory_level(content: str) -> str:
+    """Extract method/basis from ORCA output."""
+    method = ""
+    basis = ""
+    m_match = _METHOD_PATTERN.search(content)
+    if m_match:
+        method = m_match.group(1).strip()
+    else:
+        input_match = _INPUT_METHOD_PATTERN.search(content)
+        if input_match:
+            method = input_match.group(1).strip()
+    b_match = _BASIS_PATTERN.search(content)
+    if b_match:
+        basis = b_match.group(1).strip()
+    if method and basis:
+        return f"{method}/{basis}"
+    if method:
+        return method
+    return ""
+
+
 def parse_orca_record_from_files(
     conf_id: int,
     config: DP4Config,
@@ -279,6 +303,7 @@ def parse_orca_record_from_files(
     try:
         if combined_path:
             content = read_text(combined_path)
+            record.theory_level = _extract_theory_level(content)
             _extract_energies(content, record)
             _extract_frequencies(content, record, config)
             _extract_coordinates(content, record)
@@ -286,11 +311,14 @@ def parse_orca_record_from_files(
             return record
         if opt_path:
             opt_content = read_text(opt_path)
+            record.theory_level = _extract_theory_level(opt_content)
             _extract_energies(opt_content, record)
             _extract_frequencies(opt_content, record, config)
             _extract_coordinates(opt_content, record)
         if nmr_path:
             nmr_content = read_text(nmr_path)
+            if not record.theory_level:
+                record.theory_level = _extract_theory_level(nmr_content)
             if not record.coordinates:
                 _extract_coordinates(nmr_content, record)
             _extract_shieldings(nmr_content, record)

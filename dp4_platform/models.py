@@ -92,6 +92,7 @@ class ConformerRecord:
     atom_elements: dict[int, str] = field(default_factory=dict)
     coordinates: dict[int, tuple[float, float, float]] = field(default_factory=dict)
     shieldings_by_nucleus: dict[str, dict[int, float]] = field(default_factory=dict)
+    theory_level: str = ""
 
     def __post_init__(self) -> None:
         if self.combined_file:
@@ -160,6 +161,7 @@ class CandidateIsomer:
     directory: str
     collection: ConformerCollection = field(default_factory=ConformerCollection)
     averaged_shieldings: dict[str, dict[int, float]] = field(default_factory=dict)
+    atom_hybridizations: dict[int, str] = field(default_factory=dict)
     unpaired_opt: list[OrcaFileInfo] = field(default_factory=list)
     unpaired_nmr: list[OrcaFileInfo] = field(default_factory=list)
     pairing_overrides: dict[str, str] = field(default_factory=dict)
@@ -178,11 +180,37 @@ class CandidateScore:
 
 
 @dataclass
+class ScoringSet:
+    """One set of candidate scores for a particular data mode."""
+    mode: str  # "raw", "tms", "scaled"
+    label: str  # "Raw shielding", "TMS referenced", "Linear scaled"
+    candidate_scores: list[CandidateScore] = field(default_factory=list)
+
+    @property
+    def ranking(self) -> list[CandidateScore]:
+        return sorted(self.candidate_scores, key=lambda item: item.joint_probability, reverse=True)
+
+
+@dataclass
+class LinearFit:
+    """Per-isomer linear regression parameters."""
+    candidate_name: str
+    nucleus: str
+    intercept: float
+    slope: float
+    r_squared: float
+
+
+@dataclass
 class DP4Result:
-    candidate_scores: list[CandidateScore]
-    nuclei: tuple[str, ...]
-    total_assignments: int
-    output_dir: str
+    candidate_scores: list[CandidateScore] = field(default_factory=list)
+    nuclei: tuple[str, ...] = ()
+    total_assignments: int = 0
+    output_dir: str = ""
+    scoring_sets: list[ScoringSet] = field(default_factory=list)
+    linear_fits: list[LinearFit] = field(default_factory=list)
+    tms_shielding_1h: float | None = None
+    tms_shielding_13c: float | None = None
     summary_file: str | None = None
     report_file: str | None = None
     config_file: str | None = None

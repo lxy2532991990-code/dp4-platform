@@ -24,6 +24,7 @@ _NORMAL_TERMINATION_PATTERN = re.compile(r"Normal termination", re.IGNORECASE)
 _STANDARD_ORIENTATION_PATTERN = re.compile(r"^\s*Standard orientation:\s*$", re.MULTILINE)
 _INPUT_ORIENTATION_PATTERN = re.compile(r"^\s*Input orientation:\s*$", re.MULTILINE)
 _DASH_PATTERN = re.compile(r"^\s*-{5,}\s*$")
+_ROUTE_PATTERN = re.compile(r"^#[pnt]?\s*(.+)$", re.MULTILINE | re.IGNORECASE)
 
 PROGRAM_MARKERS = (
     re.compile(r"Entering Gaussian System", re.IGNORECASE),
@@ -219,6 +220,19 @@ def _apply_termination_warning(content: str, record: ConformerRecord) -> None:
         record.add_warning("Gaussian job does not show a normal termination marker")
 
 
+def _extract_theory_level(content: str) -> str:
+    """Extract method/basis from Gaussian route line."""
+    for match in _ROUTE_PATTERN.finditer(content):
+        route = match.group(1).strip()
+        # Route contains method/basis, e.g. "b3lyp/6-31g(d) opt freq"
+        # Split and take first token that contains a /
+        for token in route.split():
+            if "/" in token:
+                return token.replace(")", "").replace("(", "").strip()
+        return route.split()[0] if route else ""
+    return ""
+
+
 def parse_gaussian_record_from_files(
     conf_id: int,
     config: DP4Config,
@@ -230,6 +244,7 @@ def parse_gaussian_record_from_files(
     try:
         if combined_path:
             content = read_text(combined_path)
+            record.theory_level = _extract_theory_level(content)
             _apply_termination_warning(content, record)
             _extract_energies(content, record)
             _extract_frequencies(content, record, config)
@@ -238,12 +253,15 @@ def parse_gaussian_record_from_files(
             return record
         if opt_path:
             opt_content = read_text(opt_path)
+            record.theory_level = _extract_theory_level(opt_content)
             _apply_termination_warning(opt_content, record)
             _extract_energies(opt_content, record)
             _extract_frequencies(opt_content, record, config)
             _extract_coordinates(opt_content, record)
         if nmr_path:
             nmr_content = read_text(nmr_path)
+            if not record.theory_level:
+                record.theory_level = _extract_theory_level(nmr_content)
             _apply_termination_warning(nmr_content, record)
             if not record.coordinates:
                 _extract_coordinates(nmr_content, record)

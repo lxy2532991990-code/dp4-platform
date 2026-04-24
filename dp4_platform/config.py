@@ -27,6 +27,14 @@ class ScalingMode(Enum):
     IDENTITY = "identity"
 
 
+class DataKind(Enum):
+    """What kind of NMR data the user's output files contain."""
+    RAW_SHIELDING = "raw_shielding"
+    TMS_REFERENCED = "tms_referenced"
+    CHEMICAL_SHIFT = "chemical_shift"
+    AUTO = "auto"
+
+
 def _normalize_nuclei(values: Iterable[str]) -> tuple[str, ...]:
     seen = []
     for raw in values:
@@ -59,6 +67,10 @@ class DP4Config:
     imag_freq_policy: ImagFreqPolicy = ImagFreqPolicy.TOLERANT
     imag_freq_threshold: float = -10.0
     scaling_mode: ScalingMode = ScalingMode.PARAMETER_TABLE
+    data_kind: DataKind = DataKind.AUTO
+    tms_shielding_13c: float | None = None
+    tms_shielding_1h: float | None = None
+    tms_shielding_file: str | None = None
     recursive: bool = True
     file_extensions: tuple[str, ...] = field(default_factory=lambda: (".out", ".log", ".txt"))
     output_dir: str = "dp4_results"
@@ -99,6 +111,7 @@ class DP4Config:
             "weighting": WeightingStrategy,
             "imag_freq_policy": ImagFreqPolicy,
             "scaling_mode": ScalingMode,
+            "data_kind": DataKind,
         }
         for key, enum_cls in enum_map.items():
             if key in data and isinstance(data[key], str):

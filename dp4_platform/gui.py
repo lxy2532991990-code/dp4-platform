@@ -1637,6 +1637,28 @@ class MainWindow(QMainWindow):
         parameters_layout.addWidget(QLabel("Output dir"), 1, 2)
         parameters_layout.addWidget(self.ed_output, 1, 3, 1, 2)
         parameters_layout.addWidget(browse_output, 1, 5)
+
+        # TMS row
+        self.ed_tms_1h = QLineEdit()
+        self.ed_tms_1h.setPlaceholderText("e.g. 31.10")
+        self.ed_tms_13c = QLineEdit()
+        self.ed_tms_13c.setPlaceholderText("e.g. 190.50")
+        self.ed_tms_file = QLineEdit()
+        self.ed_tms_file.setPlaceholderText("TMS calculation output file (optional)")
+        browse_tms = QPushButton("Browse")
+        browse_tms.clicked.connect(self._choose_tms_file)
+        parameters_layout.addWidget(QLabel("TMS 1H"), 2, 0)
+        parameters_layout.addWidget(self.ed_tms_1h, 2, 1)
+        parameters_layout.addWidget(QLabel("TMS 13C"), 2, 2)
+        parameters_layout.addWidget(self.ed_tms_13c, 2, 3)
+        parameters_layout.addWidget(QLabel("TMS file"), 2, 4)
+        tms_file_row = QHBoxLayout()
+        tms_file_row.addWidget(self.ed_tms_file)
+        tms_file_row.addWidget(browse_tms)
+        tms_file_widget = QWidget()
+        tms_file_widget.setLayout(tms_file_row)
+        parameters_layout.addWidget(tms_file_widget, 3, 0, 1, 6)
+
         layout.addWidget(parameters_box)
 
         run_row = QHBoxLayout()
@@ -1655,6 +1677,18 @@ class MainWindow(QMainWindow):
         self.progress_bar.setFormat("%v / %m")
         self.progress_bar.setVisible(False)
         layout.addWidget(self.progress_bar)
+
+        # result mode switcher
+        mode_row = QHBoxLayout()
+        mode_row.addWidget(QLabel("Result mode:"))
+        self.cmb_result_mode = QComboBox()
+        self.cmb_result_mode.addItem("Linear Scaled", "scaled")
+        self.cmb_result_mode.addItem("TMS Referenced", "tms")
+        self.cmb_result_mode.addItem("Raw Shielding", "raw")
+        self.cmb_result_mode.currentIndexChanged.connect(self._on_result_mode_changed)
+        mode_row.addWidget(self.cmb_result_mode)
+        mode_row.addStretch()
+        layout.addLayout(mode_row)
 
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(["Rank", "Name", "Joint P", "1H P", "13C P"])
@@ -2194,6 +2228,16 @@ class MainWindow(QMainWindow):
         if value:
             self.ed_output.setText(value)
 
+    def _choose_tms_file(self) -> None:
+        value, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select TMS Calculation File",
+            self.ed_tms_file.text() or os.getcwd(),
+            "Output files (*.out *.log *.txt);;All files (*)",
+        )
+        if value:
+            self.ed_tms_file.setText(value)
+
     def _open_pairing_dialog(self, card: CandidateCard) -> None:
         if not card.state.directory:
             QMessageBox.warning(self, "Candidate Folder Missing", "Select a candidate folder first.")
@@ -2311,6 +2355,9 @@ class MainWindow(QMainWindow):
 
     def _collect_config(self) -> DP4Config:
         self._sync_candidate_states()
+        tms_1h_text = self.ed_tms_1h.text().strip()
+        tms_13c_text = self.ed_tms_13c.text().strip()
+        tms_file_text = self.ed_tms_file.text().strip()
         return DP4Config(
             candidates_root="",
             candidate_paths={name: state.directory for name, state in self.candidates.items()},
@@ -2321,6 +2368,9 @@ class MainWindow(QMainWindow):
             temperature=self.spin_temp.value(),
             output_dir=self.ed_output.text().strip() or os.path.abspath("dp4_results"),
             program_mode=self.cmb_program_mode.currentData(),
+            tms_shielding_1h=float(tms_1h_text) if tms_1h_text else None,
+            tms_shielding_13c=float(tms_13c_text) if tms_13c_text else None,
+            tms_shielding_file=tms_file_text if tms_file_text else None,
         )
 
     def _active_module_id(self) -> str:
@@ -2374,8 +2424,41 @@ class MainWindow(QMainWindow):
     def _handle_result(self, result) -> None:
         self.progress_bar.setVisible(False)
         self.append_log(f"Finished. Summary: {result.summary_file}")
-        self.table.setRowCount(len(result.ranking))
-        for row_index, score in enumerate(result.ranking):
+        self._last_result = result
+        self._populate_result_table()
+
+    def _populate_result_table(self) -> None:
+        result = getattr(self, "_last_result", None)
+        if result is None:
+            return
+        mode = self.cmb_result_mode.currentData()
+
+        # prefer new three-mode format, fall back to legacy
+        scoring_set = None
+        if hasattr(result, "scoring_sets") and result.scoring_sets:
+            scoring_set = next(
+                (s for s in result.scoring_sets if s.mode == mode),
+                None,
+            )
+            if scoring_set is None:
+                scoring_set = result.scoring_sets[0]
+
+        # legacy fallback: single set of scores
+        if scoring_set is None and result.candidate_scores:
+            scoring_set = type("_FallbackSet", (), {
+                "mode": "scaled",
+                "label": "DP4+ Result",
+                "ranking": sorted(result.candidate_scores, key=lambda s: s.joint_probability, reverse=True),
+            })()  # type: ignore[abstract]
+
+        if scoring_set is None:
+            self.table.setRowCount(0)
+            return
+
+        mode_label = f"{scoring_set.label} ({scoring_set.mode})"
+        self.table.setHorizontalHeaderLabels(["Rank", "Name", f"Joint P [{mode_label}]", "1H P", "13C P"])
+        self.table.setRowCount(len(scoring_set.ranking))
+        for row_index, score in enumerate(scoring_set.ranking):
             values = [
                 str(row_index + 1),
                 score.candidate_name,
@@ -2387,6 +2470,9 @@ class MainWindow(QMainWindow):
                 self.table.setItem(row_index, col_index, QTableWidgetItem(value))
         self._update_run_readiness()
 
+    def _on_result_mode_changed(self, _index: int) -> None:
+        self._populate_result_table()
+
     def _new_project(self) -> None:
         self.project_path = None
         self.ed_exp.setText("")
@@ -2396,6 +2482,9 @@ class MainWindow(QMainWindow):
         self.cmb_weighting.setCurrentIndex(self.cmb_weighting.findData(WeightingStrategy.GIBBS))
         self._set_program_mode_value("auto")
         self.spin_temp.setValue(298.15)
+        self.ed_tms_1h.setText("")
+        self.ed_tms_13c.setText("")
+        self.ed_tms_file.setText("")
         self.log.clear()
         self.table.setRowCount(0)
         for card in list(self.cards):
@@ -2450,6 +2539,9 @@ class MainWindow(QMainWindow):
         self.cmb_weighting.setCurrentIndex(self.cmb_weighting.findData(config.weighting))
         self._set_program_mode_value(config.program_mode)
         self.spin_temp.setValue(config.temperature)
+        self.ed_tms_1h.setText(str(config.tms_shielding_1h) if config.tms_shielding_1h else "")
+        self.ed_tms_13c.setText(str(config.tms_shielding_13c) if config.tms_shielding_13c else "")
+        self.ed_tms_file.setText(config.tms_shielding_file or "")
 
         for card in list(self.cards):
             self._remove_candidate_card(card)
