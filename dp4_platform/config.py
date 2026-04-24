@@ -93,9 +93,8 @@ class DP4Config:
             json.dump(self.to_dict(), fh, indent=2, ensure_ascii=False)
 
     @classmethod
-    def from_json(cls, path: str) -> "DP4Config":
-        with open(path, "r", encoding="utf-8") as fh:
-            data = json.load(fh)
+    def from_dict(cls, data: dict) -> "DP4Config":
+        data = dict(data)
         enum_map = {
             "weighting": WeightingStrategy,
             "imag_freq_policy": ImagFreqPolicy,
@@ -113,3 +112,9 @@ class DP4Config:
         if "pairing_overrides" not in data:
             data["pairing_overrides"] = {}
         return cls(**data)
+
+    @classmethod
+    def from_json(cls, path: str) -> "DP4Config":
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        return cls.from_dict(data)

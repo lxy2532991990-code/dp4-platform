@@ -104,6 +104,7 @@ if __package__ in (None, ""):
         discover_candidate_files,
     )
     from dp4_platform.pipeline import DP4Pipeline
+    from dp4_platform.project import PlatformProject, load_platform_project, save_platform_project
     from dp4_platform.structure_model import build_c_h_adjacency
 else:
     from .autoassign import (
@@ -134,10 +135,11 @@ else:
         discover_candidate_files,
     )
     from .pipeline import DP4Pipeline
+    from .project import PlatformProject, load_platform_project, save_platform_project
     from .structure_model import build_c_h_adjacency
 
 try:
-    from PyQt6.QtCore import Qt, QThread, pyqtSignal
+    from PyQt6.QtCore import QEasingCurve, QParallelAnimationGroup, QPoint, QPropertyAnimation, QSize, Qt, QThread, pyqtSignal
     from PyQt6.QtGui import QAction, QColor
     from PyQt6.QtWidgets import (
         QApplication,
@@ -148,6 +150,7 @@ try:
         QFileDialog,
         QFrame,
         QGridLayout,
+        QGraphicsDropShadowEffect,
         QGroupBox,
         QHBoxLayout,
         QHeaderView,
@@ -162,7 +165,9 @@ try:
         QProgressBar,
         QPushButton,
         QScrollArea,
+        QSizePolicy,
         QSplitter,
+        QStackedWidget,
         QTabWidget,
         QTableWidget,
         QTableWidgetItem,
@@ -187,6 +192,14 @@ except ImportError:  # pragma: no cover
         from dp4_platform.structure2d import Structure2DView
     except ImportError:
         Structure2DView = None  # type: ignore[assignment]
+
+
+def _load_ecd_page_class():
+    try:
+        from ecd_platform.gui import ECDPage
+    except Exception as exc:  # pragma: no cover - depends on optional module install
+        raise RuntimeError(f"Could not load the ECD module: {exc}") from exc
+    return ECDPage
 
 
 NONE_OPTION = "(none)"
@@ -943,6 +956,152 @@ class PipelineWorker(QThread):
             self.error.emit(str(exc))
 
 
+class ModuleCard(QFrame):
+    activated = pyqtSignal(str)
+
+    def __init__(
+        self,
+        module_id: str,
+        title: str,
+        subtitle: str,
+        status_text: str,
+        enabled: bool,
+        accent_color: str,
+    ):
+        super().__init__()
+        self.module_id = module_id
+        self.is_card_enabled = enabled
+        self._hover_lift = 8
+        self._rest_pos: QPoint | None = None
+        self._hover_animation: QParallelAnimationGroup | None = None
+        self.setObjectName("ModuleCard")
+        self.setProperty("active", "true" if enabled else "false")
+        self.setMinimumSize(320, 360)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.setCursor(Qt.CursorShape.PointingHandCursor if enabled else Qt.CursorShape.ArrowCursor)
+        self.setMouseTracking(True)
+
+        self.shadow_effect = QGraphicsDropShadowEffect(self)
+        self.shadow_effect.setBlurRadius(0)
+        self.shadow_effect.setOffset(0, 0)
+        self.shadow_effect.setColor(QColor(15, 23, 42, 0))
+        self.setGraphicsEffect(self.shadow_effect)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        preview = QFrame()
+        preview.setObjectName("ModuleCardPreview")
+        preview.setMinimumHeight(235)
+        preview_layout = QVBoxLayout(preview)
+        preview_layout.setContentsMargins(28, 26, 28, 22)
+        preview_layout.setSpacing(12)
+
+        accent = QFrame()
+        accent.setFixedSize(42, 5)
+        accent.setStyleSheet(f"background: {accent_color}; border-radius: 2px;")
+        preview_layout.addWidget(accent)
+        preview_layout.addStretch(1)
+
+        preview_title = QLabel(title)
+        preview_title.setObjectName("ModuleCardPreviewTitle")
+        preview_layout.addWidget(preview_title)
+        layout.addWidget(preview)
+
+        body = QWidget()
+        body.setObjectName("ModuleCardBody")
+        body_layout = QVBoxLayout(body)
+        body_layout.setContentsMargins(28, 24, 28, 26)
+        body_layout.setSpacing(12)
+
+        title_label = QLabel(title)
+        title_label.setObjectName("ModuleCardTitle")
+        body_layout.addWidget(title_label)
+
+        subtitle_label = QLabel(subtitle)
+        subtitle_label.setObjectName("ModuleCardSubtitle")
+        subtitle_label.setWordWrap(True)
+        body_layout.addWidget(subtitle_label)
+
+        body_layout.addStretch(1)
+
+        footer = QHBoxLayout()
+        status_label = QLabel(status_text)
+        status_label.setObjectName("ModuleCardStatus")
+        action_button = QPushButton("Open" if enabled else "Coming soon")
+        action_button.setEnabled(enabled)
+        action_button.clicked.connect(self._emit_activated)
+        footer.addWidget(status_label, 1)
+        footer.addWidget(action_button)
+        body_layout.addLayout(footer)
+        layout.addWidget(body)
+
+    def sizeHint(self) -> QSize:  # type: ignore[override]
+        return QSize(420, 420)
+
+    def reset_hover_anchor(self) -> None:
+        if self._hover_animation is not None:
+            self._hover_animation.stop()
+            self._hover_animation = None
+        if self._rest_pos is not None:
+            self.move(self._rest_pos)
+        self._rest_pos = None
+        self.shadow_effect.setBlurRadius(0)
+        self.shadow_effect.setOffset(0, 0)
+        self.shadow_effect.setColor(QColor(15, 23, 42, 0))
+
+    def enterEvent(self, event) -> None:  # type: ignore[override]
+        self._animate_hover(True)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:  # type: ignore[override]
+        self._animate_hover(False)
+        super().leaveEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:  # type: ignore[override]
+        if self.is_card_enabled and event.button() == Qt.MouseButton.LeftButton:
+            self._emit_activated()
+        super().mouseReleaseEvent(event)
+
+    def _animate_hover(self, hovered: bool) -> None:
+        if hovered:
+            if self._rest_pos is None:
+                self._rest_pos = QPoint(self.pos())
+            end_pos = QPoint(self._rest_pos)
+            end_pos.setY(end_pos.y() - self._hover_lift)
+            end_blur = 30.0
+            end_offset = 10.0
+            end_alpha = 46
+        else:
+            end_pos = QPoint(self._rest_pos or self.pos())
+            end_blur = 0.0
+            end_offset = 0.0
+            end_alpha = 0
+
+        self.shadow_effect.setColor(QColor(15, 23, 42, end_alpha))
+        if self._hover_animation is not None:
+            self._hover_animation.stop()
+
+        group = QParallelAnimationGroup(self)
+        for target, prop_name, end_value in (
+            (self, b"pos", end_pos),
+            (self.shadow_effect, b"blurRadius", end_blur),
+            (self.shadow_effect, b"yOffset", end_offset),
+        ):
+            animation = QPropertyAnimation(target, prop_name, group)
+            animation.setDuration(180)
+            animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+            animation.setEndValue(end_value)
+            group.addAnimation(animation)
+        self._hover_animation = group
+        group.start()
+
+    def _emit_activated(self) -> None:
+        if self.is_card_enabled:
+            self.activated.emit(self.module_id)
+
+
 class CandidateCard(QFrame):
     remove_requested = pyqtSignal(object)
     name_changed = pyqtSignal(object)
@@ -953,12 +1112,17 @@ class CandidateCard(QFrame):
     def __init__(self, state: CandidateCardState):
         super().__init__()
         self.state = state
+        self.setObjectName("CandidateCard")
+        self.setProperty("status", "normal")
         self.setFrameShape(QFrame.Shape.StyledPanel)
+        self.setMinimumWidth(320)
         self._build_ui()
         self.refresh()
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(12)
 
         header = QHBoxLayout()
         self.name_edit = QLineEdit(self.state.name)
@@ -994,6 +1158,7 @@ class CandidateCard(QFrame):
         refresh_button.clicked.connect(lambda: self.refresh_requested.emit(self))
         details_button = QPushButton("Details...")
         details_button.clicked.connect(lambda: self.details_requested.emit(self))
+        action_row.addStretch(1)
         action_row.addWidget(refresh_button)
         action_row.addWidget(details_button)
         layout.addLayout(action_row)
@@ -1045,16 +1210,17 @@ class CandidateCard(QFrame):
         self.summary_label.setToolTip("")
 
     def _apply_failed_styling(self, is_failed: bool) -> None:
+        self.setProperty("status", "failed" if is_failed else "normal")
+        self.style().unpolish(self)
+        self.style().polish(self)
         if is_failed:
             self.summary_label.setStyleSheet("color: #c92a2a; font-weight: bold;")
             self.error_label.setVisible(True)
-            self.setStyleSheet("CandidateCard { border: 1px solid #c92a2a; }")
         else:
             self.summary_label.setStyleSheet("")
             self.error_label.setVisible(False)
             self.error_label.setText("")
             self.error_label.setToolTip("")
-            self.setStyleSheet("")
 
 
 class PairingDialog(QDialog):
@@ -1252,6 +1418,7 @@ class MainWindow(QMainWindow):
         self.scan_workers: dict[int, CandidateScanWorker] = {}
         self.cards: list[CandidateCard] = []
         self.candidates: dict[str, CandidateCardState] = {}
+        self.ecd_body: QWidget | None = None
         self.project_path: str | None = None
         self._build_ui()
         self._new_project()
@@ -1277,10 +1444,122 @@ class MainWindow(QMainWindow):
 
     def _build_ui(self) -> None:
         self._build_menu()
+        self._apply_app_style()
+        self._build_shell()
 
+    def _build_shell(self) -> None:
         central = QWidget(self)
+        central.setObjectName("AppShell")
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        self.stack = QStackedWidget()
+        self.home_page = self._build_home_page()
+        self.dp4_page = self._build_dp4_page()
+        self.ecd_page = self._build_ecd_page()
+        self.stack.addWidget(self.home_page)
+        self.stack.addWidget(self.dp4_page)
+        self.stack.addWidget(self.ecd_page)
+        layout.addWidget(self.stack)
+
+    def _build_home_page(self) -> QWidget:
+        page = QWidget()
+        page.setObjectName("HomePage")
+        page_layout = QVBoxLayout(page)
+        page_layout.setContentsMargins(0, 0, 0, 0)
+        page_layout.setSpacing(0)
+
+        self.home_scroll_area = QScrollArea()
+        self.home_scroll_area.setWidgetResizable(True)
+        self.home_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.home_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        page_layout.addWidget(self.home_scroll_area)
+
+        scroll_content = QWidget()
+        scroll_content.setObjectName("HomeContent")
+        self.home_scroll_area.setWidget(scroll_content)
+
+        self.home_outer_layout = QVBoxLayout(scroll_content)
+        self.home_outer_layout.setContentsMargins(56, 44, 56, 44)
+        self.home_outer_layout.setSpacing(34)
+
+        header = QHBoxLayout()
+        title_block = QVBoxLayout()
+        title_block.setSpacing(6)
+        title = QLabel("DP4 Platform")
+        title.setObjectName("HomeTitle")
+        subtitle = QLabel("Choose a calculation workflow")
+        subtitle.setObjectName("HomeSubtitle")
+        title_block.addWidget(title)
+        title_block.addWidget(subtitle)
+        header.addLayout(title_block)
+        header.addStretch(1)
+        self.home_outer_layout.addLayout(header)
+
+        self.module_grid = QGridLayout()
+        self.module_grid.setContentsMargins(0, 0, 0, 0)
+        self.module_grid.setSpacing(32)
+        self.module_grid.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.module_cards: list[ModuleCard] = []
+        self._home_layout_columns: int | None = None
+        self._home_layout_card_height: int | None = None
+
+        modules = [
+            (
+                "dp4",
+                "DP4",
+                "NMR shielding based candidate ranking with assignment tools.",
+                "Ready",
+                True,
+                "#ff6b1a",
+            ),
+            (
+                "ecd",
+                "ECD",
+                "Electronic circular dichroism workflow for AC determination.",
+                "Ready",
+                True,
+                "#4c6ef5",
+            ),
+            (
+                "ir",
+                "IR",
+                "Infrared spectrum calculation workflow placeholder.",
+                "Coming soon",
+                False,
+                "#12b886",
+            ),
+        ]
+        for module_id, title, subtitle, status_text, enabled, accent_color in modules:
+            card = ModuleCard(module_id, title, subtitle, status_text, enabled, accent_color)
+            card.activated.connect(self._handle_module_activated)
+            self.module_cards.append(card)
+
+        self.home_outer_layout.addStretch(1)
+        self.home_outer_layout.addLayout(self.module_grid)
+        self.home_outer_layout.addStretch(2)
+        self._relayout_home_cards(self.width())
+        return page
+
+    def _build_dp4_page(self) -> QWidget:
+        page = QWidget()
+        page.setObjectName("DP4Page")
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(24, 18, 24, 24)
+        layout.setSpacing(16)
+
+        toolbar = QHBoxLayout()
+        back_button = QPushButton("Back")
+        back_button.setObjectName("BackButton")
+        back_button.clicked.connect(self._show_home_page)
+        title = QLabel("DP4 NMR Ranking")
+        title.setObjectName("PageTitle")
+        toolbar.addWidget(back_button)
+        toolbar.addWidget(title)
+        toolbar.addStretch(1)
+        layout.addLayout(toolbar)
 
         experimental_box = QGroupBox("Experimental")
         experimental_layout = QGridLayout(experimental_box)
@@ -1385,6 +1664,245 @@ class MainWindow(QMainWindow):
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
         layout.addWidget(self.log, 1)
+
+        return page
+
+    def _build_ecd_page(self) -> QWidget:
+        page = QWidget()
+        page.setObjectName("ECDPage")
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(24, 18, 24, 24)
+        layout.setSpacing(16)
+
+        toolbar = QHBoxLayout()
+        back_button = QPushButton("Back")
+        back_button.setObjectName("BackButton")
+        back_button.clicked.connect(self._show_home_page)
+        title = QLabel("ECD Analysis")
+        title.setObjectName("PageTitle")
+        toolbar.addWidget(back_button)
+        toolbar.addWidget(title)
+        toolbar.addStretch(1)
+        layout.addLayout(toolbar)
+
+        try:
+            ECDPage = _load_ecd_page_class()
+            self.ecd_body = ECDPage(self)
+            layout.addWidget(self.ecd_body, 1)
+        except Exception as exc:
+            self.ecd_body = None
+            error_label = QLabel(f"ECD module unavailable:\n{exc}")
+            error_label.setWordWrap(True)
+            error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(error_label, 1)
+        return page
+
+    def _handle_module_activated(self, module_id: str) -> None:
+        if module_id == "dp4":
+            self._show_dp4_page()
+        elif module_id == "ecd":
+            self._show_ecd_page()
+
+    def _show_home_page(self) -> None:
+        self.stack.setCurrentWidget(self.home_page)
+
+    def _show_dp4_page(self) -> None:
+        self.stack.setCurrentWidget(self.dp4_page)
+
+    def _show_ecd_page(self) -> None:
+        self.stack.setCurrentWidget(self.ecd_page)
+
+    def resizeEvent(self, event) -> None:  # type: ignore[override]
+        super().resizeEvent(event)
+        if hasattr(self, "module_grid"):
+            self._relayout_home_cards(event.size().width())
+
+    def _relayout_home_cards(self, width: int) -> None:
+        if width >= 1200:
+            columns = 3
+            margins = (72, 56, 72, 56)
+            spacing = 34
+            card_height = 420
+        elif width >= 760:
+            columns = 2
+            margins = (44, 40, 44, 44)
+            spacing = 28
+            card_height = 400
+        else:
+            columns = 1
+            margins = (22, 28, 22, 32)
+            spacing = 22
+            card_height = 380
+
+        if (
+            self._home_layout_columns == columns
+            and self._home_layout_card_height == card_height
+        ):
+            return
+
+        self.home_scroll_area.setUpdatesEnabled(False)
+        try:
+            self._home_layout_columns = columns
+            self._home_layout_card_height = card_height
+            self.home_outer_layout.setContentsMargins(*margins)
+            self.home_outer_layout.setSpacing(spacing)
+            self.module_grid.setHorizontalSpacing(spacing)
+            self.module_grid.setVerticalSpacing(spacing)
+
+            while self.module_grid.count():
+                item = self.module_grid.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.setParent(None)
+
+            for index in range(3):
+                self.module_grid.setColumnStretch(index, 0)
+                self.module_grid.setColumnMinimumWidth(index, 0)
+                self.module_grid.setRowStretch(index, 0)
+            for column in range(columns):
+                self.module_grid.setColumnStretch(column, 1)
+
+            for index, card in enumerate(self.module_cards):
+                row = index // columns
+                column = index % columns
+                card.reset_hover_anchor()
+                card.setMinimumSize(320, card_height)
+                card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                self.module_grid.addWidget(card, row, column)
+        finally:
+            self.home_scroll_area.setUpdatesEnabled(True)
+
+    def _apply_app_style(self) -> None:
+        self.setStyleSheet(
+            """
+            QMainWindow, QWidget#AppShell, QWidget#HomePage, QWidget#HomeContent, QWidget#DP4Page, QWidget#ECDPage {
+                background: #f4f5f8;
+                color: #202124;
+                font-size: 13px;
+            }
+            QLabel#HomeTitle {
+                font-size: 30px;
+                font-weight: 700;
+            }
+            QLabel#HomeSubtitle {
+                color: #6b7280;
+                font-size: 15px;
+            }
+            QLabel#PageTitle {
+                font-size: 20px;
+                font-weight: 700;
+            }
+            QFrame#ModuleCard {
+                background: #ffffff;
+                border: 1px solid #d9dde5;
+                border-radius: 18px;
+            }
+            QFrame#ModuleCard[active="false"] {
+                color: #8b93a1;
+                background: #f8f9fb;
+            }
+            QFrame#ModuleCardPreview {
+                background: #e8eaef;
+                border-top-left-radius: 18px;
+                border-top-right-radius: 18px;
+            }
+            QWidget#ModuleCardBody {
+                background: transparent;
+            }
+            QLabel#ModuleCardPreviewTitle {
+                color: #31343a;
+                font-size: 36px;
+                font-weight: 700;
+            }
+            QLabel#ModuleCardTitle {
+                font-size: 22px;
+                font-weight: 700;
+            }
+            QLabel#ModuleCardSubtitle {
+                color: #626b78;
+            }
+            QLabel#ModuleCardStatus {
+                color: #7b8492;
+                font-weight: 600;
+            }
+            QFrame#CandidateCard {
+                background: #ffffff;
+                border: 1px solid #d9dde5;
+                border-radius: 12px;
+            }
+            QFrame#CandidateCard[status="failed"] {
+                border: 1px solid #c92a2a;
+            }
+            QGroupBox {
+                background: #ffffff;
+                border: 1px solid #d9dde5;
+                border-radius: 12px;
+                margin-top: 18px;
+                padding: 14px;
+                font-weight: 700;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 14px;
+                padding: 0 6px;
+                color: #343a40;
+            }
+            QLineEdit, QComboBox, QDoubleSpinBox, QPlainTextEdit, QListWidget, QTableWidget {
+                background: #ffffff;
+                border: 1px solid #d0d5dd;
+                border-radius: 8px;
+                padding: 6px;
+            }
+            QTableWidget {
+                gridline-color: #e5e7eb;
+                selection-background-color: #e8f0fe;
+                selection-color: #111827;
+            }
+            QHeaderView::section {
+                background: #eef1f5;
+                border: 0;
+                border-right: 1px solid #d9dde5;
+                padding: 7px;
+                font-weight: 700;
+            }
+            QPushButton {
+                background: #ffffff;
+                border: 1px solid #cbd1dc;
+                border-radius: 8px;
+                padding: 7px 14px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background: #f0f3f8;
+            }
+            QPushButton:pressed {
+                background: #e5e9f0;
+            }
+            QPushButton:disabled {
+                color: #9aa3af;
+                background: #edf0f4;
+                border-color: #d9dde5;
+            }
+            QPushButton#BackButton {
+                padding: 7px 16px;
+            }
+            QScrollArea {
+                background: transparent;
+                border: 0;
+            }
+            QProgressBar {
+                background: #ffffff;
+                border: 1px solid #d0d5dd;
+                border-radius: 8px;
+                text-align: center;
+                height: 18px;
+            }
+            QProgressBar::chunk {
+                background: #ff6b1a;
+                border-radius: 8px;
+            }
+            """
+        )
 
     def _build_menu(self) -> None:
         menu_bar = QMenuBar(self)
@@ -1805,6 +2323,24 @@ class MainWindow(QMainWindow):
             program_mode=self.cmb_program_mode.currentData(),
         )
 
+    def _active_module_id(self) -> str:
+        current = self.stack.currentWidget()
+        if current is self.dp4_page:
+            return "dp4"
+        if current is self.ecd_page:
+            return "ecd"
+        return "home"
+
+    def _collect_platform_project(self) -> PlatformProject:
+        ecd_state = {}
+        if self.ecd_body is not None and hasattr(self.ecd_body, "to_project_dict"):
+            ecd_state = self.ecd_body.to_project_dict()
+        return PlatformProject(
+            dp4=self._collect_config(),
+            ecd=ecd_state,
+            active_module=self._active_module_id(),
+        )
+
     def run_pipeline(self) -> None:
         if not self._validate_candidate_cards():
             return
@@ -1865,12 +2401,13 @@ class MainWindow(QMainWindow):
         for card in list(self.cards):
             self._remove_candidate_card(card)
         self._add_candidate_card(CandidateCardState(name="isomer_A"))
+        if self.ecd_body is not None and hasattr(self.ecd_body, "load_project_dict"):
+            self.ecd_body.load_project_dict({})
         self._refresh_experimental_summary()
         self._update_run_readiness()
+        self._show_home_page()
 
     def _save_project(self) -> None:
-        if not self._validate_candidate_cards():
-            return
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Save Project",
@@ -1879,8 +2416,8 @@ class MainWindow(QMainWindow):
         )
         if not path:
             return
-        config = self._collect_config()
-        config.to_json(path)
+        project = self._collect_platform_project()
+        save_platform_project(path, project)
         self.project_path = path
         self.append_log(f"Project saved to {path}")
 
@@ -1889,12 +2426,20 @@ class MainWindow(QMainWindow):
         if not path:
             return
         try:
-            config = DP4Config.from_json(path)
+            project = load_platform_project(path)
         except Exception as exc:
             QMessageBox.critical(self, "Open Project Failed", str(exc))
             return
         self.project_path = path
-        self._load_config(config)
+        self._load_config(project.dp4)
+        if self.ecd_body is not None and hasattr(self.ecd_body, "load_project_dict"):
+            self.ecd_body.load_project_dict(project.ecd)
+        if project.active_module == "ecd":
+            self._show_ecd_page()
+        elif project.active_module == "dp4":
+            self._show_dp4_page()
+        else:
+            self._show_home_page()
         self.append_log(f"Project loaded from {path}")
 
     def _load_config(self, config: DP4Config) -> None:

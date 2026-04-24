@@ -10,6 +10,7 @@ setup(
     package_data={"dp4_platform": ["data/*.json"]},
     install_requires=[
         "numpy>=1.20",
+        "matplotlib>=3.5",
         "PyQt6>=6.5",
         "pyvista>=0.43",
         "pyvistaqt>=0.11",
