@@ -1,0 +1,14 @@
+! B3LYP OPT FREQ DEF2-TZVP D4 CPCM(Methanol) 
+! TightOpt
+%pal nprocs 64 end
+%maxcore 6000
+
+%cpcm
+end
+
+%freq
+   Temp 298.15
+end
+
+* xyzfile 0 1 conf-0.xyz
+

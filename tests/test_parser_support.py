@@ -10,7 +10,7 @@ from uuid import uuid4
 from dp4_platform.autoassign import build_candidate_predictions
 from dp4_platform.config import DP4Config
 from dp4_platform.energy import boltzmann_average_shieldings, compute_boltzmann_weights
-from dp4_platform.models import FileRole
+from dp4_platform.models import ConformerStatus, FileRole
 from dp4_platform.parser import discover_candidate_files, load_candidate_from_directory, pair_discovered_files
 
 
@@ -68,7 +68,6 @@ SCF Done:  E(RB3LYP) =  -233.699703238     A.U. after    1 cycles
 
 GAUSSIAN_NMR_TEXT = """\
 Entering Gaussian System, Link 0=g16
-SCF Done:  E(RB3LYP) =  -233.767757924     A.U. after    8 cycles
                          Standard orientation:
  ---------------------------------------------------------------------
  Center     Atomic      Atomic             Coordinates (Angstroms)
@@ -79,6 +78,23 @@ SCF Done:  E(RB3LYP) =  -233.767757924     A.U. after    8 cycles
  ---------------------------------------------------------------------
       1  C    Isotropic =   149.3254   Anisotropy =    51.0548
       2  H    Isotropic =    30.9527   Anisotropy =     7.0146
+ Normal termination of Gaussian 16
+"""
+
+
+GAUSSIAN_NMR_SINGLE_POINT_TEXT = """\
+Entering Gaussian System, Link 0=g16
+SCF Done:  E(RmPW1PW91) =  -2068.42313881     A.U. after   14 cycles
+                         Standard orientation:
+ ---------------------------------------------------------------------
+ Center     Atomic      Atomic             Coordinates (Angstroms)
+ Number     Number       Type             X           Y           Z
+ ---------------------------------------------------------------------
+      1          6           0        0.000000    0.000000    0.000000
+      2          1           0        0.000000    0.000000    1.089000
+ ---------------------------------------------------------------------
+      1  C    Isotropic =    24.1335   Anisotropy =   139.4236
+      2  H    Isotropic =    24.9681   Anisotropy =     4.4895
  Normal termination of Gaussian 16
 """
 
@@ -148,6 +164,54 @@ class ParserSupportTests(unittest.TestCase):
         self.assertTrue(target_record.coordinates)
         self.assertIn("13C", target_record.shieldings_by_nucleus)
         self.assertIn("1H", target_record.shieldings_by_nucleus)
+
+    def test_gaussian_nmr_single_point_with_energy_is_combined(self) -> None:
+        with self._workspace_tempdir() as tmpdir:
+            candidate_dir = tmpdir / "gaussian_nmr_sp"
+            file_path = candidate_dir / "conf-1.log"
+            self._write(file_path, GAUSSIAN_NMR_SINGLE_POINT_TEXT)
+
+            config = DP4Config(program_mode="gaussian")
+            discovered = discover_candidate_files(str(candidate_dir), config)
+            self.assertEqual(len(discovered), 1)
+            self.assertEqual(discovered[0].role, FileRole.COMBINED)
+            self.assertTrue(discovered[0].has_energy)
+            self.assertFalse(discovered[0].has_frequencies)
+            self.assertTrue(discovered[0].has_shieldings)
+
+            candidate = load_candidate_from_directory("gaussian_nmr_sp", str(candidate_dir), config)
+            record = candidate.collection.all_records[0]
+            self.assertEqual(record.status, ConformerStatus.OK)
+            self.assertAlmostEqual(record.scf_energy or 0.0, -2068.42313881, places=6)
+            self.assertIsNone(record.gibbs_energy)
+            self.assertEqual(record.frequencies, [])
+            self.assertIn("No vibrational frequencies found", record.warnings)
+            self.assertIn("13C", record.shieldings_by_nucleus)
+            self.assertIn("1H", record.shieldings_by_nucleus)
+
+    def test_gaussian_suffix_conf_ids_override_parent_molecule_number(self) -> None:
+        with self._workspace_tempdir() as tmpdir:
+            candidate_dir = tmpdir / "AM58Gaussian" / "case"
+            self._write(candidate_dir / "58RR_1.log", GAUSSIAN_NMR_SINGLE_POINT_TEXT)
+            self._write(candidate_dir / "58RR_2.log", GAUSSIAN_NMR_SINGLE_POINT_TEXT)
+
+            config = DP4Config(program_mode="gaussian")
+            discovered = discover_candidate_files(str(candidate_dir), config)
+            self.assertEqual(
+                [(Path(info.path).name, info.conf_id, info.role) for info in discovered],
+                [
+                    ("58RR_1.log", 1, FileRole.COMBINED),
+                    ("58RR_2.log", 2, FileRole.COMBINED),
+                ],
+            )
+
+            paired, unpaired_opt, unpaired_nmr = pair_discovered_files(discovered, config)
+            self.assertEqual(len(paired), 2)
+            self.assertFalse(unpaired_opt)
+            self.assertFalse(unpaired_nmr)
+
+            candidate = load_candidate_from_directory("suffix_ids", str(candidate_dir), config)
+            self.assertEqual([record.conf_id for record in candidate.collection.all_records], [1, 2])
 
     def test_gaussian_split_supports_conf_id_and_filename_pairing(self) -> None:
         with self._workspace_tempdir() as tmpdir:
