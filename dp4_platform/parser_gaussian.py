@@ -9,6 +9,7 @@ from .config import DP4Config, ImagFreqPolicy
 from .experimental import normalize_nucleus
 from .models import ConformerRecord, ConformerStatus, FileRole, OrcaFileInfo
 from .parser_common import atomic_number_to_symbol, infer_conf_id, read_text
+from .solvent import normalize_reference_solvent
 
 _SCF_DONE_PATTERN = re.compile(r"SCF Done:\s+E\([^)]+\)\s*=\s*([-\d.]+)", re.IGNORECASE)
 _FREE_ENERGY_PATTERN = re.compile(
@@ -24,7 +25,7 @@ _NORMAL_TERMINATION_PATTERN = re.compile(r"Normal termination", re.IGNORECASE)
 _STANDARD_ORIENTATION_PATTERN = re.compile(r"^\s*Standard orientation:\s*$", re.MULTILINE)
 _INPUT_ORIENTATION_PATTERN = re.compile(r"^\s*Input orientation:\s*$", re.MULTILINE)
 _DASH_PATTERN = re.compile(r"^\s*-{5,}\s*$")
-_ROUTE_PATTERN = re.compile(r"^#[pnt]?\s*(.+)$", re.MULTILINE | re.IGNORECASE)
+_ROUTE_START_PATTERN = re.compile(r"^\s*#[pnt]?\s*(.*)$", re.IGNORECASE)
 
 PROGRAM_MARKERS = (
     re.compile(r"Entering Gaussian System", re.IGNORECASE),
@@ -220,17 +221,111 @@ def _apply_termination_warning(content: str, record: ConformerRecord) -> None:
         record.add_warning("Gaussian job does not show a normal termination marker")
 
 
-def _extract_theory_level(content: str) -> str:
-    """Extract method/basis from Gaussian route line."""
-    for match in _ROUTE_PATTERN.finditer(content):
-        route = match.group(1).strip()
-        # Route contains method/basis, e.g. "b3lyp/6-31g(d) opt freq"
-        # Split and take first token that contains a /
-        for token in route.split():
-            if "/" in token:
-                return token.replace(")", "").replace("(", "").strip()
-        return route.split()[0] if route else ""
+def _extract_route_sections(content: str) -> list[str]:
+    """Collect Gaussian route sections, including wrapped continuation lines."""
+    routes: list[str] = []
+    lines = content.splitlines()
+    index = 0
+    while index < len(lines):
+        match = _ROUTE_START_PATTERN.match(lines[index])
+        if not match:
+            index += 1
+            continue
+
+        route_lines = [match.group(1).strip()]
+        index += 1
+        while index < len(lines):
+            line = lines[index].strip()
+            if not line or _DASH_PATTERN.match(line):
+                break
+            route_lines.append(line)
+            index += 1
+        route = " ".join(part for part in route_lines if part)
+        if route:
+            routes.append(re.sub(r"\s+", " ", route).strip())
+    return routes
+
+
+def _token_looks_like_basis(token: str) -> bool:
+    return bool(
+        re.search(r"\d", token)
+        and re.search(r"[A-Za-z]", token)
+        and not re.match(r"^[A-Za-z]+=", token)
+        and token.lower() not in {"nmr", "opt", "freq", "sp"}
+    )
+
+
+def _normalize_gaussian_method(method: str) -> str:
+    for prefix in ("RO", "R", "U"):
+        if method.startswith(prefix) and len(method) > len(prefix):
+            stripped = method[len(prefix):]
+            if re.search(r"(B3LYP|MPW|M06|WB97|PBE|HF|MP2|BLYP)", stripped, re.IGNORECASE):
+                return stripped
+    return method
+
+
+def _extract_level_from_route(route: str) -> str:
+    tokens = route.split()
+    for token in tokens:
+        clean = token.strip(",;")
+        if "/" not in clean:
+            continue
+        if clean.lower().startswith(("scrf", "guess", "geom", "scf", "int", "iop")):
+            continue
+        method, basis = clean.split("/", 1)
+        method = _normalize_gaussian_method(method.strip())
+        basis = basis.strip()
+        if method and basis and _token_looks_like_basis(basis):
+            return _with_solvent_prefix(route, f"{method}/{basis}")
+
+    for index, token in enumerate(tokens[:-1]):
+        method = token.strip(",;")
+        basis = tokens[index + 1].strip(",;")
+        if "=" in method or "/" in method or "/" in basis:
+            continue
+        if not re.search(r"[A-Za-z]", method) or not _token_looks_like_basis(basis):
+            continue
+        method = _normalize_gaussian_method(method)
+        return _with_solvent_prefix(route, f"{method}/{basis}")
     return ""
+
+
+def _with_solvent_prefix(route: str, level: str) -> str:
+    lower_route = route.lower()
+    if re.search(r"\bscrf\s*=?\s*\([^)]*\bsmd\b", lower_route):
+        return f"SMD/{level}"
+    if re.search(r"\b(?:scrf\s*=?\s*\([^)]*\bpcm\b|pcm\b)", lower_route):
+        return f"PCM/{level}"
+    return level
+
+
+def _extract_theory_level(content: str) -> str:
+    """Extract method/basis from Gaussian route sections."""
+    parsed = [(route, _extract_level_from_route(route)) for route in _extract_route_sections(content)]
+    parsed = [(route, level) for route, level in parsed if level]
+    if not parsed:
+        return ""
+    for route, level in reversed(parsed):
+        if re.search(r"\bnmr\b", route, re.IGNORECASE):
+            return level
+    return parsed[-1][1]
+
+
+def _extract_reference_solvent(content: str) -> str | None:
+    """Extract the requested solvent from Gaussian route sections."""
+    routes = _extract_route_sections(content)
+    for route in reversed(routes):
+        match = re.search(r"\bsolvent\s*=\s*([A-Za-z0-9_+\-]+)", route, re.IGNORECASE)
+        if match:
+            solvent = normalize_reference_solvent(match.group(1))
+            if solvent:
+                return solvent
+    return None
+
+
+def _apply_route_metadata(content: str, record: ConformerRecord) -> None:
+    record.theory_level = _extract_theory_level(content)
+    record.reference_solvent = _extract_reference_solvent(content)
 
 
 def parse_gaussian_record_from_files(
@@ -244,7 +339,7 @@ def parse_gaussian_record_from_files(
     try:
         if combined_path:
             content = read_text(combined_path)
-            record.theory_level = _extract_theory_level(content)
+            _apply_route_metadata(content, record)
             _apply_termination_warning(content, record)
             _extract_energies(content, record)
             _extract_frequencies(content, record, config)
@@ -253,7 +348,7 @@ def parse_gaussian_record_from_files(
             return record
         if opt_path:
             opt_content = read_text(opt_path)
-            record.theory_level = _extract_theory_level(opt_content)
+            _apply_route_metadata(opt_content, record)
             _apply_termination_warning(opt_content, record)
             _extract_energies(opt_content, record)
             _extract_frequencies(opt_content, record, config)
@@ -262,6 +357,8 @@ def parse_gaussian_record_from_files(
             nmr_content = read_text(nmr_path)
             if not record.theory_level:
                 record.theory_level = _extract_theory_level(nmr_content)
+            if not record.reference_solvent:
+                record.reference_solvent = _extract_reference_solvent(nmr_content)
             _apply_termination_warning(nmr_content, record)
             if not record.coordinates:
                 _extract_coordinates(nmr_content, record)

@@ -12,8 +12,10 @@ from .dp4 import (
     score_candidates_all_modes,
     detect_data_kind,
     apply_tms_referencing,
-    resolve_level_params,
+    resolve_level_match,
     per_isomer_linear_fits,
+    build_scaled_input_maps,
+    scaled_regression_modes,
 )
 from .energy import boltzmann_average_shieldings, compute_boltzmann_weights
 from .experimental import load_experimental_assignments
@@ -21,7 +23,35 @@ from .hybridization import CarbonHyb, build_atom_hybridization_map
 from .models import CandidateIsomer, DP4Result
 from .parser import discover_candidate_directories, load_candidate_from_directory
 from .report import write_reports
+from .solvent import normalize_reference_solvent
 from .tms_parser import parse_tms_file
+
+
+def select_reference_shielding(
+    level_data: dict,
+    requested_solvent: str | None,
+) -> tuple[dict, str | None, list[str]]:
+    """Select equivalent TMS shielding for a solvent, falling back to the level default."""
+    warnings: list[str] = []
+    default_ref = level_data.get("reference_shielding") or {}
+    by_solvent = level_data.get("reference_shielding_by_solvent") or {}
+    solvent = normalize_reference_solvent(requested_solvent)
+    if solvent and solvent in by_solvent:
+        return by_solvent[solvent], solvent, warnings
+
+    if solvent:
+        available = ", ".join(sorted(by_solvent)) or "none"
+        warnings.append(
+            f"Reference solvent '{solvent}' is not available for this parameter level; "
+            f"falling back to the default reference shielding. Available solvents: {available}."
+        )
+
+    default_solvent = None
+    for candidate_solvent, ref in by_solvent.items():
+        if dict(ref) == dict(default_ref):
+            default_solvent = candidate_solvent
+            break
+    return default_ref, default_solvent, warnings
 
 
 class DP4Pipeline:
@@ -37,7 +67,10 @@ class DP4Pipeline:
         self.candidates = []
         self.assignments = []
         self.parameter_table = {}
+        self.parameter_match = {}
         self.theory_level: str | None = None
+        self.reference_solvent: str | None = None
+        self.reference_solvent_source: str = ""
         self._log: list[str] = []
 
     def log(self, message: str) -> None:
@@ -72,6 +105,27 @@ class DP4Pipeline:
                     return record.theory_level
         return None
 
+    def _collect_reference_solvent(self) -> tuple[str | None, str]:
+        configured = normalize_reference_solvent(self.config.reference_solvent)
+        if configured:
+            return configured, "manual"
+
+        solvents = [
+            record.reference_solvent
+            for candidate in self.candidates
+            for record in candidate.collection.usable_records
+            if record.reference_solvent
+        ]
+        if not solvents:
+            return None, "default"
+
+        counts = Counter(solvents)
+        solvent, count = counts.most_common(1)[0]
+        if len(counts) > 1:
+            details = ", ".join(f"{name}={counts[name]}" for name in sorted(counts))
+            self.log(f"WARNING: Multiple solvents detected in calculation files ({details}); using {solvent}.")
+        return solvent, "auto"
+
     def run(self) -> DP4Result:
         self.log("Loading experimental assignments...")
         self.assignments = load_experimental_assignments(self.config.exp_nmr_file, self.config.nuclei)
@@ -104,6 +158,8 @@ class DP4Pipeline:
             for record in candidate.collection.usable_records:
                 if record.theory_level:
                     self.log(f"  Theory level: {record.theory_level}")
+                    if record.reference_solvent:
+                        self.log(f"  Detected solvent: {record.reference_solvent}")
                     break
 
             compute_boltzmann_weights(candidate, self.config)
@@ -137,25 +193,19 @@ class DP4Pipeline:
 
         # --- theory level matching ---
         self.theory_level = self._collect_theory_level()
-        if self.theory_level:
-            matched = resolve_level_params(self.parameter_table, self.theory_level)
-            if matched:
-                self.log(f"Theory level '{self.theory_level}' matched pre-calibrated parameters")
-            else:
-                default_level = self.parameter_table.get("default_level", "unknown")
-                levels_available = list(self.parameter_table.get("levels", {}).keys())
-                self.log(
-                    f"WARNING: Theory level '{self.theory_level}' not found in parameter table. "
-                    f"Using fallback parameters (default: {default_level}). "
-                    f"Available levels: {', '.join(levels_available[:5])}"
-                    + ("..." if len(levels_available) > 5 else "")
-                )
-
-        # --- save raw shieldings before any TMS referencing ---
-        for candidate in self.candidates:
-            candidate._raw_shieldings = {  # type: ignore[attr-defined]
-                nuc: dict(vals) for nuc, vals in candidate.averaged_shieldings.items()
-            }
+        self.reference_solvent, self.reference_solvent_source = self._collect_reference_solvent()
+        if self.reference_solvent:
+            self.log(f"Reference solvent: {self.reference_solvent} ({self.reference_solvent_source})")
+        else:
+            self.log("Reference solvent: parameter-table default")
+        self.parameter_match = resolve_level_match(self.parameter_table, self.theory_level)
+        if self.parameter_match.get("matched"):
+            level_name = self.parameter_match.get("level_name")
+            matched_by = self.parameter_match.get("matched_by")
+            self.log(f"Theory level '{self.theory_level}' matched parameters: {level_name} ({matched_by})")
+        else:
+            for warning in self.parameter_match.get("warnings", []):
+                self.log(f"WARNING: {warning}")
 
         # --- TMS referencing ---
         tms_1h = self.config.tms_shielding_1h
@@ -171,19 +221,78 @@ class DP4Pipeline:
                 tms_13c = tms_data["13C"]
                 self.log(f"  TMS 13C shielding: {tms_13c:.4f}")
 
-        if tms_1h is not None or tms_13c is not None:
+        shift_input = self.config.data_kind in (DataKind.TMS_REFERENCED, DataKind.CHEMICAL_SHIFT)
+        level_ref, selected_ref_solvent, ref_warnings = select_reference_shielding(
+            self.parameter_match.get("level_data") or {},
+            self.reference_solvent,
+        )
+        requested_reference_solvent = self.reference_solvent
+        for warning in ref_warnings:
+            self.log(f"WARNING: {warning}")
+            self.parameter_match.setdefault("warnings", []).append(warning)
+        if selected_ref_solvent:
+            self.reference_solvent = selected_ref_solvent
+            if requested_reference_solvent and selected_ref_solvent != requested_reference_solvent:
+                self.reference_solvent_source = "fallback"
+        if not shift_input and level_ref:
+            if tms_1h is None and "1H" in level_ref:
+                tms_1h = float(level_ref["1H"])
+                self.log(
+                    f"Using parameter-table equivalent reference for 1H: {tms_1h:.4f} "
+                    f"({self.reference_solvent or 'default'}, {self.parameter_match.get('level_name')})"
+                )
+            if tms_13c is None and "13C" in level_ref:
+                tms_13c = float(level_ref["13C"])
+                self.log(
+                    f"Using parameter-table equivalent reference for 13C: {tms_13c:.4f} "
+                    f"({self.reference_solvent or 'default'}, {self.parameter_match.get('level_name')})"
+                )
+
+        if shift_input:
+            self.log(
+                "Input NMR values are treated as chemical shifts; "
+                "TMS-referenced modes will use the parsed values directly."
+            )
+            for candidate in self.candidates:
+                candidate.tms_referenced_shifts = {
+                    nuc: dict(vals) for nuc, vals in candidate.averaged_shieldings.items()
+                }
+        elif tms_1h is not None or tms_13c is not None:
             self.log(
                 "Applying TMS referencing"
                 + (f" (1H: {tms_1h:.4f})" if tms_1h is not None else "")
                 + (f" (13C: {tms_13c:.4f})" if tms_13c is not None else "")
             )
             for candidate in self.candidates:
-                apply_tms_referencing(candidate, tms_1h, tms_13c)
+                candidate.tms_referenced_shifts = apply_tms_referencing(candidate, tms_1h, tms_13c)
+        else:
+            self.log(
+                "No TMS reference available. Raw diagnostic and shielding-domain scaled modes can run; "
+                "TMS/unscaled terms will be skipped."
+            )
 
         # --- per-isomer linear fitting ---
         self.log("Computing per-isomer linear regression fits...")
+        scaled_input_maps, scaled_fit_nuclei, scaled_input_warnings, scaled_formula = build_scaled_input_maps(
+            self.candidates,
+            self.config,
+            self.parameter_table,
+            self.theory_level,
+        )
+        for warning in scaled_input_warnings:
+            self.log(f"  WARNING: {warning}")
+        if scaled_formula:
+            self.log(f"  Scaled formula: {scaled_formula}")
         linear_fits = per_isomer_linear_fits(
-            self.candidates, self.assignments, self.config.nuclei
+            self.candidates,
+            self.assignments,
+            scaled_fit_nuclei,
+            value_maps_by_candidate=scaled_input_maps,
+            regression_modes_by_nucleus=scaled_regression_modes(
+                self.parameter_table,
+                scaled_fit_nuclei,
+                self.theory_level,
+            ),
         )
         for lf in linear_fits:
             self.log(
@@ -201,9 +310,13 @@ class DP4Pipeline:
             theory_level=self.theory_level,
             linear_fits=linear_fits,
         )
-        # legacy compatibility: use "scaled" as primary
-        scaled_set = next((s for s in scoring_sets if s.mode == "scaled"), scoring_sets[-1])
-        candidate_scores = scaled_set.candidate_scores
+        # legacy compatibility: prefer scaled, then TMS/unscaled, then raw diagnostic fallback
+        primary_set = next((s for s in scoring_sets if s.mode == "scaled" and s.candidate_scores), None)
+        if primary_set is None:
+            primary_set = next((s for s in scoring_sets if s.mode == "tms" and s.candidate_scores), None)
+        if primary_set is None:
+            primary_set = next((s for s in scoring_sets if s.mode == "raw" and s.candidate_scores), scoring_sets[-1])
+        candidate_scores = primary_set.candidate_scores
         self._emit_progress(len(candidate_dirs) + 1, total)
 
         result = DP4Result(
@@ -215,6 +328,9 @@ class DP4Pipeline:
             linear_fits=linear_fits,
             tms_shielding_1h=tms_1h,
             tms_shielding_13c=tms_13c,
+            reference_solvent=self.reference_solvent,
+            reference_solvent_source=self.reference_solvent_source,
+            parameter_match=self.parameter_match,
         )
         self.log("Writing reports...")
         report_result = write_reports(self.config, self.candidates, result)

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 import math
+import re
+from difflib import get_close_matches
 from importlib import resources
 
 from .config import DP4Config, ScalingMode, DataKind
@@ -31,15 +33,47 @@ from .models import (
 def load_parameter_table(path: str | None) -> dict:
     if path:
         with open(path, "r", encoding="utf-8") as fh:
-            return json.load(fh)
-    with resources.files("dp4_platform.data").joinpath("default_parameter_table.json").open(
-        "r", encoding="utf-8"
-    ) as fh:
-        return json.load(fh)
+            return validate_parameter_table(json.load(fh))
+    data_root = resources.files("dp4_platform.data")
+    for filename in ("dp4plus_parameter_table.json", "default_parameter_table.json"):
+        resource = data_root.joinpath(filename)
+        if resource.is_file():
+            with resource.open("r", encoding="utf-8") as fh:
+                return validate_parameter_table(json.load(fh))
+    raise FileNotFoundError("No DP4 parameter table is bundled with dp4_platform.data")
+
+
+def validate_parameter_table(parameter_table: dict) -> dict:
+    """Validate the minimal fields needed by v1/v2 parameter tables."""
+    if parameter_table.get("schema_version") != 2:
+        if "nuclei" not in parameter_table and "levels" not in parameter_table:
+            raise ValueError("Parameter table must define either 'nuclei' or 'levels'")
+        return parameter_table
+
+    if not parameter_table.get("sources"):
+        raise ValueError("schema v2 parameter table must define 'sources'")
+    levels = parameter_table.get("levels")
+    if not isinstance(levels, dict) or not levels:
+        raise ValueError("schema v2 parameter table must define non-empty 'levels'")
+    for level_name, level_data in levels.items():
+        nuclei = level_data.get("nuclei")
+        if not isinstance(nuclei, dict) or not ({"1H", "13C"} & set(nuclei)):
+            raise ValueError(f"Level '{level_name}' must define at least one supported nucleus")
+        for nucleus, params in nuclei.items():
+            if "scaled_error" not in params:
+                raise ValueError(f"Level '{level_name}' nucleus {nucleus} lacks scaled_error")
+            if _get_scaling_input(params) not in {"shielding", "unscaled_shift"}:
+                raise ValueError(f"Level '{level_name}' nucleus {nucleus} has invalid scaling_input")
+    return parameter_table
 
 
 def _normalize_basis(name: str) -> str:
     n = name.lower().replace(" ", "")
+    n = n.replace("\\", "/")
+    n = n.replace("m06-2x", "m062x")
+    n = n.replace("m06_2x", "m062x")
+    n = n.replace("wb97x-d", "wb97xd")
+    n = n.replace("w-b97xd", "wb97xd")
     n = n.replace("(d,p)", "**")
     n = n.replace("(d)", "*")
     n = n.replace("(p)", "*")
@@ -48,27 +82,122 @@ def _normalize_basis(name: str) -> str:
 
 
 def _normalize_level_name(name: str) -> str:
-    return _normalize_basis(name)
+    n = _normalize_basis(str(name))
+    n = n.replace("dp4+app", "")
+    n = n.replace("mm-dp4+", "mmdp4")
+    n = n.replace("dp4+", "dp4")
+    return re.sub(r"[^a-z0-9+*]+", "", n)
+
+
+def _iter_level_aliases(level_name: str, level_data: dict):
+    yield level_name
+    if level_data.get("original_name"):
+        yield str(level_data["original_name"])
+    if level_data.get("nmr_level"):
+        yield str(level_data["nmr_level"])
+    for alias in level_data.get("aliases", []):
+        yield str(alias)
+
+
+def _level_alias_index(parameter_table: dict) -> dict[str, tuple[str, dict, str]]:
+    index: dict[str, tuple[str, dict, str]] = {}
+    for level_name, level_data in parameter_table.get("levels", {}).items():
+        for alias in _iter_level_aliases(level_name, level_data):
+            norm = _normalize_level_name(alias)
+            index.setdefault(norm, (level_name, level_data, alias))
+    return index
+
+
+def _fallback_level_name(parameter_table: dict) -> str | None:
+    levels = parameter_table.get("levels", {})
+    fallback = parameter_table.get("fallback_level") or parameter_table.get("default_level")
+    if fallback in levels:
+        return fallback
+    if fallback:
+        match = _level_alias_index(parameter_table).get(_normalize_level_name(fallback))
+        if match:
+            return match[0]
+    return next(iter(levels), None)
+
+
+def resolve_level_match(parameter_table: dict, theory_level: str | None) -> dict:
+    """Resolve a requested theory level to a parameter-table level with provenance."""
+    levels = parameter_table.get("levels") or {}
+    if not levels:
+        return {
+            "requested_level": theory_level,
+            "matched": False,
+            "fallback": False,
+            "matched_by": "table_without_levels",
+            "level_name": None,
+            "level_data": None,
+            "nuclei": parameter_table.get("nuclei", {}),
+            "warnings": [],
+            "candidates": [],
+        }
+
+    alias_index = _level_alias_index(parameter_table)
+    warnings: list[str] = []
+    candidates: list[str] = []
+    if theory_level:
+        normalized = _normalize_level_name(theory_level)
+        if normalized in alias_index:
+            level_name, level_data, alias = alias_index[normalized]
+            matched_by = "exact" if _normalize_level_name(level_name) == normalized else f"alias:{alias}"
+            return {
+                "requested_level": theory_level,
+                "matched": True,
+                "fallback": False,
+                "matched_by": matched_by,
+                "level_name": level_name,
+                "level_data": level_data,
+                "nuclei": level_data.get("nuclei", {}),
+                "warnings": [],
+                "candidates": [],
+            }
+        candidates = get_close_matches(normalized, list(alias_index), n=5, cutoff=0.45)
+        candidates = [alias_index[item][0] for item in candidates]
+        # Keep order while removing duplicates.
+        candidates = list(dict.fromkeys(candidates))
+
+    fallback_name = _fallback_level_name(parameter_table)
+    fallback_data = levels.get(fallback_name, {}) if fallback_name else {}
+    if theory_level:
+        warnings.append(
+            f"Theory level '{theory_level}' was not found in the parameter library; "
+            f"using fallback '{fallback_name}'. Treat this result as lower confidence."
+        )
+    else:
+        warnings.append(
+            f"No theory level was detected; using fallback '{fallback_name}'. "
+            "Treat this result as lower confidence."
+        )
+    if candidates:
+        warnings.append("Closest available parameter levels: " + ", ".join(candidates[:5]))
+    return {
+        "requested_level": theory_level,
+        "matched": False,
+        "fallback": True,
+        "matched_by": "fallback",
+        "level_name": fallback_name,
+        "level_data": fallback_data,
+        "nuclei": fallback_data.get("nuclei", parameter_table.get("nuclei", {})),
+        "warnings": warnings,
+        "candidates": candidates,
+    }
 
 
 def resolve_level_params(parameter_table: dict, theory_level: str | None) -> dict | None:
-    levels = parameter_table.get("levels")
-    if not levels:
-        return None
-    if not theory_level:
-        return None
-    target = _normalize_level_name(theory_level)
-    for level_name, level_data in levels.items():
-        if _normalize_level_name(level_name) == target:
-            return level_data["nuclei"]
+    match = resolve_level_match(parameter_table, theory_level)
+    if match.get("matched"):
+        return match.get("nuclei")
     return None
 
 
 def _get_effective_nuclei(parameter_table: dict, theory_level: str | None) -> dict:
-    if theory_level:
-        matched = resolve_level_params(parameter_table, theory_level)
-        if matched:
-            return matched
+    match = resolve_level_match(parameter_table, theory_level)
+    if match.get("nuclei"):
+        return match["nuclei"]
     return parameter_table.get("nuclei", {})
 
 
@@ -125,13 +254,11 @@ def apply_tms_referencing(
     referenced: dict[str, dict[int, float]] = {}
     for nucleus, tms in [("1H", tms_1h), ("13C", tms_13c)]:
         if tms is None:
-            referenced[nucleus] = dict(candidate.averaged_shieldings.get(nucleus, {}))
             continue
         referenced[nucleus] = {
             atom_id: tms - shielding
             for atom_id, shielding in candidate.averaged_shieldings.get(nucleus, {}).items()
         }
-    candidate.averaged_shieldings = referenced
     return referenced
 
 
@@ -150,6 +277,83 @@ def _t_log_pdf(x: float, mu: float, sigma: float, nu: float) -> float:
         - math.log(sigma)
         - ((nu + 1.0) / 2.0) * math.log1p(z * z / nu)
     )
+
+
+def _betacf(a: float, b: float, x: float) -> float:
+    max_iter = 200
+    eps = 3.0e-14
+    tiny = 1.0e-300
+    qab = a + b
+    qap = a + 1.0
+    qam = a - 1.0
+    c = 1.0
+    d = 1.0 - qab * x / qap
+    if abs(d) < tiny:
+        d = tiny
+    d = 1.0 / d
+    h = d
+    for m in range(1, max_iter + 1):
+        m2 = 2 * m
+        aa = m * (b - m) * x / ((qam + m2) * (a + m2))
+        d = 1.0 + aa * d
+        if abs(d) < tiny:
+            d = tiny
+        c = 1.0 + aa / c
+        if abs(c) < tiny:
+            c = tiny
+        d = 1.0 / d
+        h *= d * c
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+        d = 1.0 + aa * d
+        if abs(d) < tiny:
+            d = tiny
+        c = 1.0 + aa / c
+        if abs(c) < tiny:
+            c = tiny
+        d = 1.0 / d
+        delta = d * c
+        h *= delta
+        if abs(delta - 1.0) < eps:
+            break
+    return h
+
+
+def _regularized_incomplete_beta(a: float, b: float, x: float) -> float:
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    log_bt = (
+        math.lgamma(a + b)
+        - math.lgamma(a)
+        - math.lgamma(b)
+        + a * math.log(x)
+        + b * math.log1p(-x)
+    )
+    bt = math.exp(log_bt)
+    if x < (a + 1.0) / (a + b + 2.0):
+        return bt * _betacf(a, b, x) / a
+    return 1.0 - bt * _betacf(b, a, 1.0 - x) / b
+
+
+def _t_cdf(x: float, nu: float) -> float:
+    if nu <= 0:
+        raise ValueError("t-distribution requires nu > 0")
+    if x == 0:
+        return 0.5
+    beta_x = nu / (nu + x * x)
+    ib = _regularized_incomplete_beta(nu / 2.0, 0.5, beta_x)
+    if x > 0:
+        return 1.0 - 0.5 * ib
+    return 0.5 * ib
+
+
+def _student_t_tail_log_probability(error: float, mu: float, sigma: float, nu: float) -> float:
+    if sigma <= 0 or nu <= 0:
+        raise ValueError("student_t_tail requires sigma > 0 and nu > 0")
+    z = abs((error - mu) / sigma)
+    tail = 1.0 - _t_cdf(z, nu)
+    return math.log(max(tail, 1.0e-300))
 
 
 # ---------------------------------------------------------------------------
@@ -176,6 +380,15 @@ def _get_scaled_error_params(params: dict) -> dict:
     return {"distribution": "normal", "mu": 0.0, "sigma": 1.0, "nu": 5.0}
 
 
+def _normalize_error_params(entry: dict) -> dict:
+    return {
+        "distribution": entry.get("distribution", "t"),
+        "mu": float(entry.get("mu", entry.get("mean", 0.0))),
+        "sigma": float(entry.get("sigma", entry.get("stddev", 1.0))),
+        "nu": float(entry.get("nu", 5.0)),
+    }
+
+
 def _get_unscaled_error_params(params: dict, hyb: str) -> dict | None:
     ue = params.get("unscaled_error")
     if not ue:
@@ -183,18 +396,45 @@ def _get_unscaled_error_params(params: dict, hyb: str) -> dict | None:
     entry = ue.get(hyb) or ue.get("default")
     if not entry:
         return None
-    return {
-        "distribution": entry.get("distribution", "t"),
-        "mu": float(entry.get("mu", 0.0)),
-        "sigma": float(entry.get("sigma", 1.0)),
-        "nu": float(entry.get("nu", 5.0)),
+    return _normalize_error_params(entry)
+
+
+def _get_raw_error_params(params: dict, hyb: str) -> dict | None:
+    raw = params.get("raw_shielding_error")
+    if not raw:
+        return None
+    if any(key in raw for key in ("distribution", "mu", "mean", "sigma", "stddev")):
+        return _normalize_error_params(raw)
+    entry = raw.get(hyb) or raw.get("default")
+    if not entry:
+        return None
+    return _normalize_error_params(entry)
+
+
+def _get_scaling_input(params: dict) -> str:
+    value = str(params.get("scaling_input", "shielding")).strip().lower()
+    aliases = {
+        "raw": "shielding",
+        "sigma": "shielding",
+        "shieldings": "shielding",
+        "shift": "unscaled_shift",
+        "chemical_shift": "unscaled_shift",
+        "tms": "unscaled_shift",
+        "tms_referenced": "unscaled_shift",
+        "unscaled": "unscaled_shift",
     }
+    value = aliases.get(value, value)
+    if value not in {"shielding", "unscaled_shift"}:
+        raise ValueError(f"Unsupported scaling_input: {value}")
+    return value
 
 
 def _compute_log_likelihood(errors: list[float], em: dict) -> float:
     total = 0.0
     for error in errors:
-        if em["distribution"] == "t":
+        if em["distribution"] in {"student_t_tail", "t_tail"}:
+            total += _student_t_tail_log_probability(error, em["mu"], em["sigma"], em["nu"])
+        elif em["distribution"] == "t":
             total += _t_log_pdf(error, em["mu"], em["sigma"], em["nu"])
         else:
             total += _normal_log_pdf(error, em["mu"], em["sigma"])
@@ -222,6 +462,14 @@ def predict_shift(
     if scaling_mode == ScalingMode.IDENTITY:
         return shielding
     params = _nucleus_params(parameter_table, nucleus, theory_level)
+    if _get_scaling_input(params) == "unscaled_shift":
+        reference = params.get("reference_shielding")
+        if reference is None:
+            raise ValueError(
+                "This parameter table scales unscaled chemical shifts; "
+                "TMS-referenced values are required instead of raw shieldings."
+            )
+        shielding = float(reference) - shielding
     if scaling_mode in (ScalingMode.PARAMETER_TABLE, ScalingMode.LINEAR):
         intercept = float(params.get("intercept", 0.0))
         slope = float(params.get("slope", 1.0))
@@ -270,34 +518,47 @@ def per_isomer_linear_fits(
     candidates: list[CandidateIsomer],
     assignments: list[ExperimentalAssignment],
     nuclei: tuple[str, ...],
-    use_tms_referenced: bool = False,
+    value_maps_by_candidate: dict[str, dict[str, dict[int, float]]] | None = None,
+    regression_modes_by_nucleus: dict[str, str] | None = None,
 ) -> list[LinearFit]:
     """Compute per-isomer linear regression parameters.
 
-    For each isomer and nucleus, fits ``exp = intercept + slope * computed``
-    using the matched assignment pairs.
+    For DP4+App-style tables, fits ``computed = intercept + slope * exp``.
+    Legacy shielding-domain tables can request ``direct`` mode, which fits
+    ``exp = intercept + slope * computed``.
     """
     fits: list[LinearFit] = []
 
     for candidate in candidates:
+        value_map = (
+            value_maps_by_candidate.get(candidate.name, candidate.averaged_shieldings)
+            if value_maps_by_candidate is not None
+            else candidate.averaged_shieldings
+        )
         for nucleus in nuclei:
             nucleus_assignments = [a for a in assignments if a.nucleus == nucleus]
             if not nucleus_assignments:
                 continue
 
-            x_vals: list[float] = []
-            y_vals: list[float] = []
+            calc_vals: list[float] = []
+            exp_vals: list[float] = []
             for a in nucleus_assignments:
-                shielding = candidate.averaged_shieldings.get(nucleus, {}).get(a.candidate_atom_id)
-                if shielding is None:
+                calc_value = value_map.get(nucleus, {}).get(a.candidate_atom_id)
+                if calc_value is None:
                     continue
-                x_vals.append(shielding)
-                y_vals.append(a.exp_shift_ppm)
+                calc_vals.append(calc_value)
+                exp_vals.append(a.exp_shift_ppm)
 
-            if len(x_vals) < 2:
+            if len(calc_vals) < 2:
                 continue
 
-            intercept, slope, r2 = fit_linear(x_vals, y_vals)
+            regression_mode = (regression_modes_by_nucleus or {}).get(nucleus, "inverse")
+            if regression_mode == "direct":
+                intercept, slope, r2 = fit_linear(calc_vals, exp_vals)
+            else:
+                intercept, slope, r2 = fit_linear(exp_vals, calc_vals)
+                if not math.isfinite(slope) or abs(slope) < 1.0e-12:
+                    continue
             fits.append(LinearFit(
                 candidate_name=candidate.name,
                 nucleus=nucleus,
@@ -330,40 +591,129 @@ def _hyb_key_for_nucleus(atom_id: int, nucleus: str, candidate: CandidateIsomer)
 
 
 # ---------------------------------------------------------------------------
-# single-mode scoring
+# scoring helpers
 # ---------------------------------------------------------------------------
 
-def _score_candidate_single_mode(
+def _candidate_value_map(candidate: CandidateIsomer, values_by_candidate: dict[str, dict[str, dict[int, float]]]) -> dict[str, dict[int, float]]:
+    return values_by_candidate.get(candidate.name, {})
+
+
+def _available_nuclei_for_values(
+    candidates: list[CandidateIsomer],
+    values_by_candidate: dict[str, dict[str, dict[int, float]]],
+    nuclei: tuple[str, ...],
+) -> tuple[str, ...]:
+    available: list[str] = []
+    for nucleus in nuclei:
+        if all(_candidate_value_map(candidate, values_by_candidate).get(nucleus) for candidate in candidates):
+            available.append(nucleus)
+    return tuple(available)
+
+
+def _raw_value_maps(candidates: list[CandidateIsomer]) -> dict[str, dict[str, dict[int, float]]]:
+    return {
+        candidate.name: {
+            nucleus: dict(values)
+            for nucleus, values in candidate.averaged_shieldings.items()
+        }
+        for candidate in candidates
+    }
+
+
+def _tms_value_maps(candidates: list[CandidateIsomer]) -> dict[str, dict[str, dict[int, float]]]:
+    return {
+        candidate.name: {
+            nucleus: dict(values)
+            for nucleus, values in candidate.tms_referenced_shifts.items()
+        }
+        for candidate in candidates
+    }
+
+
+def scaled_regression_modes(
+    parameter_table: dict,
+    nuclei: tuple[str, ...],
+    theory_level: str | None = None,
+) -> dict[str, str]:
+    """Return per-nucleus regression semantics for scaled scoring."""
+    modes: dict[str, str] = {}
+    for nucleus in nuclei:
+        params = _nucleus_params(parameter_table, nucleus, theory_level)
+        modes[nucleus] = "inverse" if _get_scaling_input(params) == "unscaled_shift" else "direct"
+    return modes
+
+
+def build_scaled_input_maps(
+    candidates: list[CandidateIsomer],
+    config: DP4Config,
+    parameter_table: dict,
+    theory_level: str | None = None,
+) -> tuple[dict[str, dict[str, dict[int, float]]], tuple[str, ...], list[str], str]:
+    """Build the per-candidate input maps used by scaled scoring."""
+    raw_maps = _raw_value_maps(candidates)
+    tms_maps = _tms_value_maps(candidates)
+    scaled_maps: dict[str, dict[str, dict[int, float]]] = {
+        candidate.name: {} for candidate in candidates
+    }
+    warnings: list[str] = []
+    formula_parts: list[str] = []
+
+    for nucleus in config.nuclei:
+        params = _nucleus_params(parameter_table, nucleus, theory_level)
+        scaling_input = _get_scaling_input(params)
+        if scaling_input == "shielding":
+            for candidate in candidates:
+                values = _candidate_value_map(candidate, raw_maps).get(nucleus, {})
+                if values:
+                    scaled_maps[candidate.name][nucleus] = dict(values)
+            formula_parts.append(f"{nucleus}: delta_scaled = intercept + slope * sigma_sample")
+            continue
+
+        if scaling_input == "unscaled_shift":
+            if nucleus not in _available_nuclei_for_values(candidates, tms_maps, (nucleus,)):
+                warnings.append(
+                    f"{nucleus} scaled scoring requires TMS-referenced chemical shifts; "
+                    "this nucleus was skipped."
+                )
+                continue
+            for candidate in candidates:
+                scaled_maps[candidate.name][nucleus] = dict(
+                    _candidate_value_map(candidate, tms_maps).get(nucleus, {})
+                )
+            formula_parts.append(
+                f"{nucleus}: delta_unscaled = slope * delta_exp + intercept; "
+                "delta_scaled = (delta_unscaled - intercept) / slope"
+            )
+
+    scaled_nuclei = _available_nuclei_for_values(candidates, scaled_maps, config.nuclei)
+    if not scaled_nuclei:
+        warnings.append("Scaled scoring has no usable nuclei after applying scaling_input requirements.")
+    return scaled_maps, scaled_nuclei, warnings, "; ".join(formula_parts)
+
+
+def _score_candidate_values(
     candidate: CandidateIsomer,
     assignments: list[ExperimentalAssignment],
     nuclei: tuple[str, ...],
     parameter_table: dict,
     theory_level: str | None,
+    calc_values: dict[str, dict[int, float]],
     mode: str,
+    unscaled_values: dict[str, dict[int, float]] | None = None,
     linear_fit_map: dict[str, dict[str, tuple[float, float]]] | None = None,
 ) -> CandidateScore:
-    """Score one candidate in one mode.
-
-    Parameters
-    ----------
-    mode: "raw" | "tms" | "scaled"
-        - raw:    unscaled error model on raw shieldings
-        - tms:    unscaled error model on TMS-referenced shifts
-        - scaled: scaled error model + unscaled (combined), with per-isomer or table scaling
-    linear_fit_map: {candidate_name: {nucleus: (intercept, slope)}} for per-isomer scaled mode
-    """
     score = CandidateScore(candidate_name=candidate.name)
 
     for nucleus in nuclei:
+        values_for_nucleus = calc_values.get(nucleus, {})
+        if not values_for_nucleus:
+            continue
         nucleus_assignments = [a for a in assignments if a.nucleus == nucleus]
         if not nucleus_assignments:
             continue
         params = _nucleus_params(parameter_table, nucleus, theory_level)
 
-        scaled_em = _get_scaled_error_params(params)
-        scaled_errors: list[float] = []
-
-        # determine scaling for this isomer + nucleus
+        scaling_input = _get_scaling_input(params)
         if mode == "scaled" and linear_fit_map and candidate.name in linear_fit_map:
             fit = linear_fit_map[candidate.name].get(nucleus)
             if fit is not None:
@@ -375,56 +725,80 @@ def _score_candidate_single_mode(
             sc_intercept = float(params.get("intercept", 0.0))
             sc_slope = float(params.get("slope", 1.0))
 
+        errors: list[float] = []
+        predicted_by_atom: dict[int, float] = {}
         for assignment in nucleus_assignments:
             atom_id = assignment.candidate_atom_id
-            shielding = candidate.averaged_shieldings.get(nucleus, {}).get(atom_id)
-            if shielding is None:
+            calc_value = values_for_nucleus.get(atom_id)
+            if calc_value is None:
                 raise ValueError(
-                    f"Candidate '{candidate.name}' is missing shielding for atom "
+                    f"Candidate '{candidate.name}' is missing {mode} value for atom "
                     f"{atom_id} nucleus {nucleus}."
                 )
-
-            if mode == "scaled":
-                predicted = sc_intercept + sc_slope * shielding
+            if mode == "scaled" and scaling_input == "unscaled_shift":
+                if math.isfinite(sc_slope) and abs(sc_slope) >= 1.0e-12:
+                    predicted = (calc_value - sc_intercept) / sc_slope
+                else:
+                    predicted = calc_value
+            elif mode == "scaled":
+                predicted = sc_intercept + sc_slope * calc_value
             else:
-                predicted = shielding  # raw or tms: no linear scaling
-
-            scaled_error = assignment.exp_shift_ppm - predicted
-            scaled_errors.append(scaled_error)
-
+                predicted = calc_value
+            error = predicted - assignment.exp_shift_ppm
+            errors.append(error)
+            predicted_by_atom[atom_id] = predicted
             score.shift_rows.append(
                 ShiftRow(
                     atom_id=atom_id,
                     nucleus=nucleus,
                     exp_shift_ppm=assignment.exp_shift_ppm,
                     predicted_shift_ppm=predicted,
-                    error_ppm=scaled_error,
+                    error_ppm=error,
                     label=assignment.label,
                 )
             )
 
-        # scaled log-likelihood (only used in "scaled" mode)
         if mode == "scaled":
-            scaled_log_lik = _compute_log_likelihood(scaled_errors, scaled_em)
+            nucleus_log_lik = _compute_log_likelihood(errors, _get_scaled_error_params(params))
+            unscaled_for_nucleus = (unscaled_values or {}).get(nucleus, {})
+            for assignment in nucleus_assignments:
+                atom_id = assignment.candidate_atom_id
+                unscaled_value = unscaled_for_nucleus.get(atom_id)
+                if unscaled_value is None:
+                    continue
+                hyb_key = _hyb_key_for_nucleus(atom_id, nucleus, candidate)
+                unscaled_em = _get_unscaled_error_params(params, hyb_key)
+                if unscaled_em is not None:
+                    nucleus_log_lik += _compute_log_likelihood(
+                        [unscaled_value - assignment.exp_shift_ppm], unscaled_em
+                    )
+        elif mode == "tms":
+            nucleus_log_lik = 0.0
+            for assignment in nucleus_assignments:
+                atom_id = assignment.candidate_atom_id
+                hyb_key = _hyb_key_for_nucleus(atom_id, nucleus, candidate)
+                unscaled_em = _get_unscaled_error_params(params, hyb_key)
+                if unscaled_em is not None:
+                    nucleus_log_lik += _compute_log_likelihood(
+                        [predicted_by_atom[atom_id] - assignment.exp_shift_ppm], unscaled_em
+                    )
         else:
-            scaled_log_lik = 0.0
+            nucleus_log_lik = 0.0
+            used_raw_model = False
+            for assignment in nucleus_assignments:
+                atom_id = assignment.candidate_atom_id
+                hyb_key = _hyb_key_for_nucleus(atom_id, nucleus, candidate)
+                raw_em = _get_raw_error_params(params, hyb_key)
+                if raw_em is None:
+                    continue
+                used_raw_model = True
+                nucleus_log_lik += _compute_log_likelihood(
+                    [predicted_by_atom[atom_id] - assignment.exp_shift_ppm], raw_em
+                )
+            if not used_raw_model:
+                nucleus_log_lik = -0.5 * sum(error * error for error in errors)
 
-        # unscaled log-likelihood (used in all modes)
-        unscaled_log_lik = 0.0
-        for assignment in nucleus_assignments:
-            atom_id = assignment.candidate_atom_id
-            shielding = candidate.averaged_shieldings.get(nucleus, {}).get(atom_id)
-            if shielding is None:
-                continue
-            unsealed_error = assignment.exp_shift_ppm - shielding
-            hyb_key = _hyb_key_for_nucleus(atom_id, nucleus, candidate)
-            unscaled_em = _get_unscaled_error_params(params, hyb_key)
-            if unscaled_em is not None:
-                unscaled_log_lik += _compute_log_likelihood([unsealed_error], unscaled_em)
-
-        nucleus_log_lik = scaled_log_lik + unscaled_log_lik
-
-        mae, rmse = _compute_error_stats(scaled_errors)
+        mae, rmse = _compute_error_stats(errors)
         score.mae_by_nucleus[nucleus] = mae
         score.rmse_by_nucleus[nucleus] = rmse
         score.n_assignments_by_nucleus[nucleus] = len(nucleus_assignments)
@@ -434,7 +808,8 @@ def _score_candidate_single_mode(
         score.probabilities["_log_likelihood_by_nucleus"][nucleus] = nucleus_log_lik
 
     log_lik_by_nuc = score.probabilities.get("_log_likelihood_by_nucleus", {})
-    score.joint_log_likelihood = sum(v for v in log_lik_by_nuc.values() if v is not None)
+    if log_lik_by_nuc:
+        score.joint_log_likelihood = sum(v for v in log_lik_by_nuc.values() if v is not None)
     return score
 
 
@@ -486,18 +861,36 @@ def score_candidates(
     theory_level: str | None = None,
 ) -> list[CandidateScore]:
     """Legacy single-mode scoring (uses "scaled" mode)."""
+    scaled_maps, scaled_nuclei, _warnings, _formula = build_scaled_input_maps(
+        candidates, config, parameter_table, theory_level
+    )
+    regression_modes = scaled_regression_modes(parameter_table, scaled_nuclei, theory_level)
+    linear_fits = per_isomer_linear_fits(
+        candidates,
+        assignments,
+        scaled_nuclei,
+        value_maps_by_candidate=scaled_maps,
+        regression_modes_by_nucleus=regression_modes,
+    )
+    linear_fit_map: dict[str, dict[str, tuple[float, float]]] = {}
+    for lf in linear_fits:
+        linear_fit_map.setdefault(lf.candidate_name, {})[lf.nucleus] = (lf.intercept, lf.slope)
+    tms_maps = _tms_value_maps(candidates)
     scores = [
-        _score_candidate_single_mode(
+        _score_candidate_values(
             candidate=candidate,
             assignments=assignments,
-            nuclei=config.nuclei,
+            nuclei=scaled_nuclei,
             parameter_table=parameter_table,
             theory_level=theory_level,
+            calc_values=_candidate_value_map(candidate, scaled_maps),
             mode="scaled",
+            unscaled_values=_candidate_value_map(candidate, tms_maps),
+            linear_fit_map=linear_fit_map,
         )
         for candidate in candidates
     ]
-    _normalize_probabilities(scores, config.nuclei)
+    _normalize_probabilities(scores, scaled_nuclei)
     return sorted(scores, key=lambda item: item.joint_probability, reverse=True)
 
 
@@ -509,73 +902,125 @@ def score_candidates_all_modes(
     theory_level: str | None = None,
     linear_fits: list[LinearFit] | None = None,
 ) -> list[ScoringSet]:
-    """Run three scoring passes and return all results.
-
-    Returns a list of three ScoringSet objects:
-      - "raw":    unscaled error model on raw computed shieldings
-      - "tms":    unscaled error model on TMS-referenced shifts
-      - "scaled": combined sDP4+ + uDP4+ with per-isomer linear scaling
-
-    Each candidate's original ``averaged_shieldings`` are assumed to be
-    TMS-referenced (if TMS was applied). The "raw" mode uses the original
-    raw shieldings stored in ``_raw_shieldings`` if available, otherwise
-    falls back to the current shieldings.
-    """
+    """Run raw diagnostic, TMS-unscaled, and scaled DP4+ scoring passes."""
     # build per-isomer linear fit lookup
     linear_fit_map: dict[str, dict[str, tuple[float, float]]] = {}
     if linear_fits:
         for lf in linear_fits:
             linear_fit_map.setdefault(lf.candidate_name, {})[lf.nucleus] = (lf.intercept, lf.slope)
 
-    # pick which data to use for "raw" vs "tms" modes
-    # If TMS was applied, the current shieldings are TMS-referenced,
-    # and _raw_shieldings (if set) holds the original raw values.
     scoring_sets: list[ScoringSet] = []
-
-    # --- mode: raw (unscaled only, on raw shieldings) ---
-    # Use _raw_shieldings if available, else fall back
-    for candidate in candidates:
-        if not hasattr(candidate, "_raw_shieldings") or candidate._raw_shieldings is None:
-            candidate._raw_shieldings = dict(candidate.averaged_shieldings)
-
-    saved_tms = {c.name: dict(c.averaged_shieldings) for c in candidates}
-
-    # Temporarily restore raw shieldings for "raw" mode scoring
-    for candidate in candidates:
-        raw = getattr(candidate, "_raw_shieldings", None)
-        if raw:
-            candidate.averaged_shieldings = raw
+    raw_maps = _raw_value_maps(candidates)
+    raw_nuclei = _available_nuclei_for_values(candidates, raw_maps, config.nuclei)
+    tms_maps = _tms_value_maps(candidates)
+    tms_nuclei = _available_nuclei_for_values(candidates, tms_maps, config.nuclei)
 
     raw_scores = [
-        _score_candidate_single_mode(c, assignments, config.nuclei, parameter_table,
-                                     theory_level, mode="raw")
+        _score_candidate_values(
+            candidate=c,
+            assignments=assignments,
+            nuclei=raw_nuclei,
+            parameter_table=parameter_table,
+            theory_level=theory_level,
+            calc_values=_candidate_value_map(c, raw_maps),
+            mode="raw",
+        )
         for c in candidates
     ]
-    _normalize_probabilities(raw_scores, config.nuclei)
+    _normalize_probabilities(raw_scores, raw_nuclei)
     raw_sorted = sorted(raw_scores, key=lambda s: s.joint_probability, reverse=True)
-    scoring_sets.append(ScoringSet(mode="raw", label="Raw shielding", candidate_scores=raw_sorted))
+    scoring_sets.append(
+        ScoringSet(
+            mode="raw",
+            label="Raw shielding diagnostic",
+            candidate_scores=raw_sorted,
+            formula="diagnostic score on sigma_sample; TMS is not used",
+            warnings=[
+                "Raw mode is a fallback diagnostic and is not the classical uDP4+ chemical-shift model."
+            ],
+        )
+    )
 
-    # --- mode: tms (unscaled only, on TMS-referenced data) ---
-    for candidate in candidates:
-        candidate.averaged_shieldings = saved_tms[candidate.name]
-
-    tms_scores = [
-        _score_candidate_single_mode(c, assignments, config.nuclei, parameter_table,
-                                     theory_level, mode="tms")
-        for c in candidates
-    ]
-    _normalize_probabilities(tms_scores, config.nuclei)
+    tms_warnings: list[str] = []
+    if not tms_nuclei:
+        tms_warnings.append("No TMS-referenced chemical shifts are available; tms mode was not scored.")
+        tms_scores = []
+    else:
+        missing = [nucleus for nucleus in config.nuclei if nucleus not in tms_nuclei]
+        for nucleus in missing:
+            tms_warnings.append(f"{nucleus} lacks TMS-referenced shifts and was skipped in tms mode.")
+        tms_scores = [
+            _score_candidate_values(
+                candidate=c,
+                assignments=assignments,
+                nuclei=tms_nuclei,
+                parameter_table=parameter_table,
+                theory_level=theory_level,
+                calc_values=_candidate_value_map(c, tms_maps),
+                mode="tms",
+            )
+            for c in candidates
+        ]
+        _normalize_probabilities(tms_scores, tms_nuclei)
     tms_sorted = sorted(tms_scores, key=lambda s: s.joint_probability, reverse=True)
-    scoring_sets.append(ScoringSet(mode="tms", label="TMS referenced", candidate_scores=tms_sorted))
+    scoring_sets.append(
+        ScoringSet(
+            mode="tms",
+            label="TMS referenced unscaled shift",
+            candidate_scores=tms_sorted,
+            formula="delta_unscaled = sigma_TMS - sigma_sample",
+            warnings=tms_warnings,
+        )
+    )
 
-    # --- mode: scaled (combined sDP4+ + uDP4+, per-isomer linear scaling) ---
+    scaled_maps, scaled_nuclei, scaled_warnings, scaled_formula = build_scaled_input_maps(
+        candidates, config, parameter_table, theory_level
+    )
+    regression_modes = scaled_regression_modes(parameter_table, scaled_nuclei, theory_level)
+    missing_inverse_fits: list[str] = []
+    for candidate in candidates:
+        candidate_fits = linear_fit_map.get(candidate.name, {})
+        for nucleus in scaled_nuclei:
+            if regression_modes.get(nucleus) == "inverse" and nucleus not in candidate_fits:
+                missing_inverse_fits.append(f"{candidate.name}/{nucleus}")
+    if missing_inverse_fits:
+        scaled_warnings.append(
+            "DP4+App inverse scaled regression fell back to unscaled shifts for: "
+            + ", ".join(missing_inverse_fits)
+        )
+    if tms_nuclei:
+        missing_u = [nucleus for nucleus in scaled_nuclei if nucleus not in tms_nuclei]
+        for nucleus in missing_u:
+            scaled_warnings.append(
+                f"{nucleus} scaled score omits the uDP4+ unscaled term because TMS-referenced shifts are unavailable."
+            )
+    else:
+        scaled_warnings.append("Scaled score omits all uDP4+ unscaled terms because TMS-referenced shifts are unavailable.")
+
     scaled_scores = [
-        _score_candidate_single_mode(c, assignments, config.nuclei, parameter_table,
-                                     theory_level, mode="scaled", linear_fit_map=linear_fit_map)
+        _score_candidate_values(
+            candidate=c,
+            assignments=assignments,
+            nuclei=scaled_nuclei,
+            parameter_table=parameter_table,
+            theory_level=theory_level,
+            calc_values=_candidate_value_map(c, scaled_maps),
+            mode="scaled",
+            unscaled_values=_candidate_value_map(c, tms_maps),
+            linear_fit_map=linear_fit_map,
+        )
         for c in candidates
-    ]
-    _normalize_probabilities(scaled_scores, config.nuclei)
+    ] if scaled_nuclei else []
+    _normalize_probabilities(scaled_scores, scaled_nuclei)
     scaled_sorted = sorted(scaled_scores, key=lambda s: s.joint_probability, reverse=True)
-    scoring_sets.append(ScoringSet(mode="scaled", label="Linear scaled", candidate_scores=scaled_sorted))
+    scoring_sets.append(
+        ScoringSet(
+            mode="scaled",
+            label="Scaled chemical shift",
+            candidate_scores=scaled_sorted,
+            formula=scaled_formula or "no scaled formula available",
+            warnings=scaled_warnings,
+        )
+    )
 
     return scoring_sets

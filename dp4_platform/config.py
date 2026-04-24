@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Iterable, Literal
 
+from .solvent import normalize_reference_solvent
+
 
 class WeightingStrategy(Enum):
     ELECTRONIC = "electronic"
@@ -71,6 +73,7 @@ class DP4Config:
     tms_shielding_13c: float | None = None
     tms_shielding_1h: float | None = None
     tms_shielding_file: str | None = None
+    reference_solvent: str | None = None
     recursive: bool = True
     file_extensions: tuple[str, ...] = field(default_factory=lambda: (".out", ".log", ".txt"))
     output_dir: str = "dp4_results"
@@ -88,6 +91,7 @@ class DP4Config:
             raise ValueError(f"Unsupported program_mode: {self.program_mode}")
         if self.auto_pair_strategy not in {"conf_id", "filename", "manual"}:
             raise ValueError(f"Unsupported auto_pair_strategy: {self.auto_pair_strategy}")
+        self.reference_solvent = normalize_reference_solvent(self.reference_solvent)
 
     def to_dict(self) -> dict:
         data = {}

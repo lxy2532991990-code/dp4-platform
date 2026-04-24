@@ -12,6 +12,11 @@ from dp4_platform.config import DP4Config
 from dp4_platform.energy import boltzmann_average_shieldings, compute_boltzmann_weights
 from dp4_platform.models import ConformerStatus, FileRole
 from dp4_platform.parser import discover_candidate_files, load_candidate_from_directory, pair_discovered_files
+from dp4_platform.parser_gaussian import (
+    _extract_reference_solvent as _extract_gaussian_reference_solvent,
+    _extract_theory_level,
+)
+from dp4_platform.parser_orca import _extract_reference_solvent as _extract_orca_reference_solvent
 
 
 ORCA_COMBINED_TEXT = """\
@@ -188,6 +193,66 @@ class ParserSupportTests(unittest.TestCase):
             self.assertIn("No vibrational frequencies found", record.warnings)
             self.assertIn("13C", record.shieldings_by_nucleus)
             self.assertIn("1H", record.shieldings_by_nucleus)
+
+    def test_gaussian_theory_level_handles_indented_smd_nmr_route(self) -> None:
+        text = """\
+ Entering Gaussian System, Link 0=g16
+ ---------------------------------------------------------------------
+ # mPW1PW91/6-311+g(2d,p) NMR scrf(SMD,solvent=dmso) geom=connectivity
+ ---------------------------------------------------------------------
+ Normal termination of Gaussian 16
+"""
+        self.assertEqual(_extract_theory_level(text), "SMD/mPW1PW91/6-311+g(2d,p)")
+        self.assertEqual(_extract_gaussian_reference_solvent(text), "DMSO")
+
+    def test_orca_reference_solvent_from_cpcm_block(self) -> None:
+        text = """\
+CPCM SOLVATION MODEL
+CPCM parameters:
+Solvent:                                          ... METHANOL
+"""
+        self.assertEqual(_extract_orca_reference_solvent(text), "MeOH")
+
+    def test_gaussian_theory_level_supports_wrapped_route_and_method_basis(self) -> None:
+        text = """\
+Entering Gaussian System, Link 0=g16
+ ---------------------------------------------------------------------
+ #p b3lyp 6-31g(d,p) EmpiricalDispersion=GD3 geom=allcheck guess
+ =read scf=(fermi,xqc)
+ ---------------------------------------------------------------------
+ Normal termination of Gaussian 16
+"""
+        self.assertEqual(_extract_theory_level(text), "b3lyp/6-31g(d,p)")
+
+    def test_gaussian_theory_level_prefers_nmr_route(self) -> None:
+        text = """\
+Entering Gaussian System, Link 0=g16
+ ---------------------------------------------------------------------
+ #p b3lyp 6-31g(d,p) opt freq
+ ---------------------------------------------------------------------
+ Normal termination of Gaussian 16
+Entering Gaussian System, Link 0=g16
+ ---------------------------------------------------------------------
+ #P Geom=AllCheck Guess=TCheck RB3LYP/6-311+g(2d,p) NMR
+ ---------------------------------------------------------------------
+ Normal termination of Gaussian 16
+"""
+        self.assertEqual(_extract_theory_level(text), "B3LYP/6-311+g(2d,p)")
+
+    def test_gaussian_theory_level_uses_last_parseable_non_nmr_route(self) -> None:
+        text = """\
+Entering Gaussian System, Link 0=g16
+ ---------------------------------------------------------------------
+ #p b3lyp 6-31g(d,p) opt freq
+ ---------------------------------------------------------------------
+ Normal termination of Gaussian 16
+Entering Gaussian System, Link 0=g16
+ ---------------------------------------------------------------------
+ #p mPW1PW91/6-311+g(2d,p) sp
+ ---------------------------------------------------------------------
+ Normal termination of Gaussian 16
+"""
+        self.assertEqual(_extract_theory_level(text), "mPW1PW91/6-311+g(2d,p)")
 
     def test_gaussian_suffix_conf_ids_override_parent_molecule_number(self) -> None:
         with self._workspace_tempdir() as tmpdir:

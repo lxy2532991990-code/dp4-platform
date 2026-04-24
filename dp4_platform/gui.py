@@ -105,6 +105,7 @@ if __package__ in (None, ""):
     )
     from dp4_platform.pipeline import DP4Pipeline
     from dp4_platform.project import PlatformProject, load_platform_project, save_platform_project
+    from dp4_platform.solvent import REFERENCE_SOLVENTS
     from dp4_platform.structure_model import build_c_h_adjacency
 else:
     from .autoassign import (
@@ -136,6 +137,7 @@ else:
     )
     from .pipeline import DP4Pipeline
     from .project import PlatformProject, load_platform_project, save_platform_project
+    from .solvent import REFERENCE_SOLVENTS
     from .structure_model import build_c_h_adjacency
 
 try:
@@ -456,7 +458,7 @@ class AutoAssignDialog(QDialog):
 
         self.table = QTableWidget(0, 6)
         self.table.setHorizontalHeaderLabels(
-            ["核", "原子序号", "元素", "预测 (ppm)", "实测 (ppm)", "误差 (ppm)"]
+            ["Nucleus", "Atom", "Element", "Predicted (ppm)", "Experimental (ppm)", "Calc-Exp (ppm)"]
         )
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
@@ -804,7 +806,7 @@ class AutoAssignDialog(QDialog):
         except ValueError:
             err_item.setText("?")
             return
-        err_item.setText(f"{exp_value - pred_value:+.3f}")
+        err_item.setText(f"{pred_value - exp_value:+.3f}")
 
     def _current_assigned_atoms(self) -> set[int]:
         return {row.atom_id for row in self.rows if row.exp_shift_ppm is not None}
@@ -1103,6 +1105,9 @@ class ModuleCard(QFrame):
 
 
 class CandidateCard(QFrame):
+    CARD_WIDTH = 520
+    CARD_HEIGHT = 206
+
     remove_requested = pyqtSignal(object)
     name_changed = pyqtSignal(object)
     directory_changed = pyqtSignal(object)
@@ -1115,7 +1120,8 @@ class CandidateCard(QFrame):
         self.setObjectName("CandidateCard")
         self.setProperty("status", "normal")
         self.setFrameShape(QFrame.Shape.StyledPanel)
-        self.setMinimumWidth(320)
+        self.setFixedSize(self.CARD_WIDTH, self.CARD_HEIGHT)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self._build_ui()
         self.refresh()
 
@@ -1427,6 +1433,16 @@ class MainWindow(QMainWindow):
         self.scroll_area.setUpdatesEnabled(enabled)
         self.scroll_content.setUpdatesEnabled(enabled)
 
+    def _refresh_candidate_scroll_content_size(self) -> None:
+        margins = self.scroll_layout.contentsMargins()
+        card_count = len(getattr(self, "cards", []))
+        width = margins.left() + margins.right() + card_count * CandidateCard.CARD_WIDTH
+        if card_count > 1:
+            width += self.scroll_layout.spacing() * (card_count - 1)
+        width = max(width, self.scroll_area.viewport().width())
+        self.scroll_content.setMinimumSize(width, 232)
+        self.scroll_content.resize(width, 232)
+
     def _rebuild_candidates_dict(self) -> None:
         self.candidates = {
             card.state.name: card.state
@@ -1546,7 +1562,21 @@ class MainWindow(QMainWindow):
     def _build_dp4_page(self) -> QWidget:
         page = QWidget()
         page.setObjectName("DP4Page")
-        layout = QVBoxLayout(page)
+        page_layout = QVBoxLayout(page)
+        page_layout.setContentsMargins(0, 0, 0, 0)
+        page_layout.setSpacing(0)
+
+        self.dp4_scroll_area = QScrollArea()
+        self.dp4_scroll_area.setWidgetResizable(True)
+        self.dp4_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.dp4_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        page_layout.addWidget(self.dp4_scroll_area)
+
+        scroll_content = QWidget()
+        scroll_content.setObjectName("DP4Content")
+        self.dp4_scroll_area.setWidget(scroll_content)
+
+        layout = QVBoxLayout(scroll_content)
         layout.setContentsMargins(24, 18, 24, 24)
         layout.setSpacing(16)
 
@@ -1562,13 +1592,20 @@ class MainWindow(QMainWindow):
         layout.addLayout(toolbar)
 
         experimental_box = QGroupBox("Experimental")
+        experimental_box.setMinimumHeight(132)
         experimental_layout = QGridLayout(experimental_box)
+        experimental_layout.setColumnStretch(1, 1)
+        experimental_layout.setRowMinimumHeight(0, 38)
+        experimental_layout.setRowMinimumHeight(1, 28)
         self.ed_exp = QLineEdit()
+        self.ed_exp.setMinimumHeight(34)
         self.ed_exp.textChanged.connect(lambda _text: self._refresh_experimental_summary())
         browse_exp = QPushButton("Browse")
+        browse_exp.setMinimumHeight(34)
         browse_exp.clicked.connect(self._choose_experimental_file)
         auto_assign_btn = QPushButton("从 NMR 文本自动指派")
         auto_assign_btn.clicked.connect(self._open_auto_assign_dialog)
+        auto_assign_btn.setMinimumHeight(34)
         self.exp_summary = QLabel("Loaded: no file")
         experimental_layout.addWidget(QLabel("Experimental CSV"), 0, 0)
         experimental_layout.addWidget(self.ed_exp, 0, 1)
@@ -1578,22 +1615,42 @@ class MainWindow(QMainWindow):
         layout.addWidget(experimental_box)
 
         candidates_box = QGroupBox("Candidates")
+        candidates_box.setFixedHeight(292)
         candidates_layout = QVBoxLayout(candidates_box)
         self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFixedHeight(244)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setWidgetResizable(False)
         self.scroll_content = QWidget()
+        self.scroll_content.setFixedHeight(232)
         self.scroll_layout = QHBoxLayout(self.scroll_content)
-        self.scroll_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.scroll_layout.setContentsMargins(12, 12, 12, 12)
+        self.scroll_layout.setSpacing(12)
+        self.scroll_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.scroll_area.setWidget(self.scroll_content)
-        candidates_layout.addWidget(self.scroll_area)
-        layout.addWidget(candidates_box)
-
         self.add_button = QPushButton("+ Add")
+        self.add_button.setFixedSize(112, 56)
         self.add_button.clicked.connect(lambda: self._add_candidate_card())
-        self.scroll_layout.addWidget(self.add_button)
+        candidates_row = QHBoxLayout()
+        candidates_row.setContentsMargins(0, 0, 0, 0)
+        candidates_row.setSpacing(12)
+        candidates_row.addWidget(self.scroll_area, 1)
+        candidates_row.addWidget(self.add_button, 0, Qt.AlignmentFlag.AlignVCenter)
+        candidates_layout.addLayout(candidates_row)
+        layout.addWidget(candidates_box)
+        self._refresh_candidate_scroll_content_size()
 
         parameters_box = QGroupBox("Parameters")
+        parameters_box.setMinimumHeight(178)
         parameters_layout = QGridLayout(parameters_box)
+        parameters_layout.setHorizontalSpacing(12)
+        parameters_layout.setVerticalSpacing(10)
+        parameters_layout.setColumnStretch(1, 1)
+        parameters_layout.setColumnStretch(3, 1)
+        parameters_layout.setColumnStretch(5, 1)
+        for row_index in range(4):
+            parameters_layout.setRowMinimumHeight(row_index, 38)
 
         self.chk_h = QCheckBox("1H")
         self.chk_h.setChecked(True)
@@ -1608,22 +1665,27 @@ class MainWindow(QMainWindow):
         nuclei_widget.setLayout(nuclei_row)
 
         self.cmb_weighting = QComboBox()
+        self.cmb_weighting.setMinimumHeight(34)
         for strategy in WeightingStrategy:
             self.cmb_weighting.addItem(strategy.value, strategy)
 
         self.cmb_program_mode = QComboBox()
+        self.cmb_program_mode.setMinimumHeight(34)
         self.cmb_program_mode.addItem("Auto", "auto")
         self.cmb_program_mode.addItem("ORCA", "orca")
         self.cmb_program_mode.addItem("Gaussian", "gaussian")
         self.cmb_program_mode.currentIndexChanged.connect(self._handle_program_mode_changed)
 
         self.spin_temp = QDoubleSpinBox()
+        self.spin_temp.setMinimumHeight(34)
         self.spin_temp.setDecimals(2)
         self.spin_temp.setRange(1.0, 5000.0)
         self.spin_temp.setValue(298.15)
 
         self.ed_output = QLineEdit(os.path.abspath("dp4_results"))
+        self.ed_output.setMinimumHeight(34)
         browse_output = QPushButton("Browse")
+        browse_output.setMinimumHeight(34)
         browse_output.clicked.connect(self._choose_output_dir)
 
         parameters_layout.addWidget(QLabel("Nuclei"), 0, 0)
@@ -1640,18 +1702,29 @@ class MainWindow(QMainWindow):
 
         # TMS row
         self.ed_tms_1h = QLineEdit()
+        self.ed_tms_1h.setMinimumHeight(34)
         self.ed_tms_1h.setPlaceholderText("e.g. 31.10")
         self.ed_tms_13c = QLineEdit()
+        self.ed_tms_13c.setMinimumHeight(34)
         self.ed_tms_13c.setPlaceholderText("e.g. 190.50")
         self.ed_tms_file = QLineEdit()
+        self.ed_tms_file.setMinimumHeight(34)
         self.ed_tms_file.setPlaceholderText("TMS calculation output file (optional)")
+        self.cmb_reference_solvent = QComboBox()
+        self.cmb_reference_solvent.setMinimumHeight(34)
+        self.cmb_reference_solvent.setEditable(True)
+        self.cmb_reference_solvent.addItem("Auto", "")
+        for solvent in REFERENCE_SOLVENTS:
+            self.cmb_reference_solvent.addItem(solvent, solvent)
         browse_tms = QPushButton("Browse")
+        browse_tms.setMinimumHeight(34)
         browse_tms.clicked.connect(self._choose_tms_file)
         parameters_layout.addWidget(QLabel("TMS 1H"), 2, 0)
         parameters_layout.addWidget(self.ed_tms_1h, 2, 1)
         parameters_layout.addWidget(QLabel("TMS 13C"), 2, 2)
         parameters_layout.addWidget(self.ed_tms_13c, 2, 3)
-        parameters_layout.addWidget(QLabel("TMS file"), 2, 4)
+        parameters_layout.addWidget(QLabel("Solvent"), 2, 4)
+        parameters_layout.addWidget(self.cmb_reference_solvent, 2, 5)
         tms_file_row = QHBoxLayout()
         tms_file_row.addWidget(self.ed_tms_file)
         tms_file_row.addWidget(browse_tms)
@@ -1682,22 +1755,25 @@ class MainWindow(QMainWindow):
         mode_row = QHBoxLayout()
         mode_row.addWidget(QLabel("Result mode:"))
         self.cmb_result_mode = QComboBox()
-        self.cmb_result_mode.addItem("Linear Scaled", "scaled")
-        self.cmb_result_mode.addItem("TMS Referenced", "tms")
-        self.cmb_result_mode.addItem("Raw Shielding", "raw")
+        self.cmb_result_mode.setMinimumHeight(34)
+        self.cmb_result_mode.addItem("Scaled chemical shift", "scaled")
+        self.cmb_result_mode.addItem("TMS referenced unscaled shift", "tms")
+        self.cmb_result_mode.addItem("Raw shielding diagnostic", "raw")
         self.cmb_result_mode.currentIndexChanged.connect(self._on_result_mode_changed)
         mode_row.addWidget(self.cmb_result_mode)
         mode_row.addStretch()
         layout.addLayout(mode_row)
 
         self.table = QTableWidget(0, 5)
+        self.table.setMinimumHeight(148)
         self.table.setHorizontalHeaderLabels(["Rank", "Name", "Joint P", "1H P", "13C P"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        layout.addWidget(self.table, 2)
+        layout.addWidget(self.table)
 
         self.log = QPlainTextEdit()
+        self.log.setMinimumHeight(140)
         self.log.setReadOnly(True)
-        layout.addWidget(self.log, 1)
+        layout.addWidget(self.log)
 
         return page
 
@@ -1750,6 +1826,8 @@ class MainWindow(QMainWindow):
         super().resizeEvent(event)
         if hasattr(self, "module_grid"):
             self._relayout_home_cards(event.size().width())
+        if hasattr(self, "scroll_content"):
+            self._refresh_candidate_scroll_content_size()
 
     def _relayout_home_cards(self, width: int) -> None:
         if width >= 1200:
@@ -2158,10 +2236,11 @@ class MainWindow(QMainWindow):
         self._set_candidate_area_updates_enabled(False)
         try:
             self.cards.append(card)
-            self.scroll_layout.insertWidget(max(0, self.scroll_layout.count() - 1), card)
+            self.scroll_layout.addWidget(card)
             self._add_candidate_state_to_dict(card.state)
         finally:
             self._set_candidate_area_updates_enabled(True)
+            self._refresh_candidate_scroll_content_size()
             self.scroll_content.update()
             self.scroll_area.update()
         if card.state.directory:
@@ -2183,6 +2262,7 @@ class MainWindow(QMainWindow):
             card.deleteLater()
         finally:
             self._set_candidate_area_updates_enabled(True)
+            self._refresh_candidate_scroll_content_size()
             self.scroll_content.update()
             self.scroll_area.update()
         self._update_run_readiness()
@@ -2358,6 +2438,8 @@ class MainWindow(QMainWindow):
         tms_1h_text = self.ed_tms_1h.text().strip()
         tms_13c_text = self.ed_tms_13c.text().strip()
         tms_file_text = self.ed_tms_file.text().strip()
+        reference_solvent_text = self.cmb_reference_solvent.currentText().strip()
+        reference_solvent = None if reference_solvent_text.lower() in {"", "auto"} else reference_solvent_text
         return DP4Config(
             candidates_root="",
             candidate_paths={name: state.directory for name, state in self.candidates.items()},
@@ -2371,6 +2453,7 @@ class MainWindow(QMainWindow):
             tms_shielding_1h=float(tms_1h_text) if tms_1h_text else None,
             tms_shielding_13c=float(tms_13c_text) if tms_13c_text else None,
             tms_shielding_file=tms_file_text if tms_file_text else None,
+            reference_solvent=reference_solvent,
         )
 
     def _active_module_id(self) -> str:
@@ -2424,6 +2507,21 @@ class MainWindow(QMainWindow):
     def _handle_result(self, result) -> None:
         self.progress_bar.setVisible(False)
         self.append_log(f"Finished. Summary: {result.summary_file}")
+        parameter_match = getattr(result, "parameter_match", {}) or {}
+        if parameter_match:
+            self.append_log(
+                "Parameter level: "
+                f"{parameter_match.get('level_name') or 'none'} "
+                f"({parameter_match.get('matched_by') or 'unknown'})"
+            )
+            if getattr(result, "reference_solvent", None):
+                source = getattr(result, "reference_solvent_source", "")
+                self.append_log(f"Reference solvent: {result.reference_solvent} ({source or 'default'})")
+            for warning in parameter_match.get("warnings", []):
+                self.append_log(f"Parameter warning: {warning}")
+        for scoring_set in getattr(result, "scoring_sets", []):
+            for warning in getattr(scoring_set, "warnings", []):
+                self.append_log(f"{scoring_set.label}: {warning}")
         self._last_result = result
         self._populate_result_table()
 
@@ -2485,6 +2583,7 @@ class MainWindow(QMainWindow):
         self.ed_tms_1h.setText("")
         self.ed_tms_13c.setText("")
         self.ed_tms_file.setText("")
+        self.cmb_reference_solvent.setCurrentIndex(0)
         self.log.clear()
         self.table.setRowCount(0)
         for card in list(self.cards):
@@ -2542,6 +2641,14 @@ class MainWindow(QMainWindow):
         self.ed_tms_1h.setText(str(config.tms_shielding_1h) if config.tms_shielding_1h else "")
         self.ed_tms_13c.setText(str(config.tms_shielding_13c) if config.tms_shielding_13c else "")
         self.ed_tms_file.setText(config.tms_shielding_file or "")
+        if config.reference_solvent:
+            index = self.cmb_reference_solvent.findData(config.reference_solvent)
+            if index >= 0:
+                self.cmb_reference_solvent.setCurrentIndex(index)
+            else:
+                self.cmb_reference_solvent.setEditText(config.reference_solvent)
+        else:
+            self.cmb_reference_solvent.setCurrentIndex(0)
 
         for card in list(self.cards):
             self._remove_candidate_card(card)

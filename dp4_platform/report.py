@@ -1,7 +1,4 @@
-"""Report generation for the standalone DP4+ workflow.
-
-Outputs three scoring modes: raw shielding, TMS referenced, linear scaled.
-"""
+"""Report generation for the standalone DP4+ workflow."""
 
 from __future__ import annotations
 
@@ -61,11 +58,16 @@ def write_reports(
         _write_summary_csv(summary_path, ss, result.nuclei)
         generated.append(summary_path)
 
-    # ---- legacy default: use "scaled" as dp4_summary.csv ----
+    # ---- legacy default: prefer scaled, then TMS, then raw diagnostic fallback ----
     scaled_set = next((s for s in result.scoring_sets if s.mode == "scaled"), None)
-    if scaled_set:
+    legacy_set = next((s for s in result.scoring_sets if s.mode == "scaled" and s.candidate_scores), None)
+    if legacy_set is None:
+        legacy_set = next((s for s in result.scoring_sets if s.mode == "tms" and s.candidate_scores), None)
+    if legacy_set is None:
+        legacy_set = next((s for s in result.scoring_sets if s.mode == "raw" and s.candidate_scores), None)
+    if legacy_set:
         legacy_path = os.path.join(config.output_dir, "dp4_summary.csv")
-        _write_summary_csv(legacy_path, scaled_set, result.nuclei)
+        _write_summary_csv(legacy_path, legacy_set, result.nuclei)
         generated.append(legacy_path)
 
     # ---- linear fit table ----
@@ -73,7 +75,7 @@ def write_reports(
         fit_path = os.path.join(config.output_dir, "linear_fits.csv")
         with open(fit_path, "w", encoding="utf-8", newline="") as fh:
             writer = csv.writer(fh)
-            writer.writerow(["candidate", "nucleus", "intercept", "slope", "r2"])
+            writer.writerow(["candidate", "nucleus", "intercept", "slope", "r2", "fit_semantics"])
             for lf in result.linear_fits:
                 writer.writerow([
                     lf.candidate_name,
@@ -81,6 +83,7 @@ def write_reports(
                     f"{lf.intercept:.6f}",
                     f"{lf.slope:.6f}",
                     f"{lf.r_squared:.6f}",
+                    "DP4+App unscaled: computed = slope * exp + intercept; legacy shielding: exp = intercept + slope * computed",
                 ])
         generated.append(fit_path)
 
@@ -95,7 +98,7 @@ def write_reports(
                 writer = csv.writer(fh)
                 writer.writerow([
                     "candidate_atom_id", "nucleus", "label",
-                    "exp_shift_ppm", "predicted_shift_ppm", "error_ppm",
+                    "exp_shift_ppm", "predicted_shift_ppm", "calc_minus_exp_ppm",
                 ])
                 for row in sorted(score.shift_rows, key=lambda item: (item.nucleus, item.atom_id)):
                     writer.writerow([
@@ -126,15 +129,75 @@ def write_reports(
         fh.write(f"Weighting: {config.weighting.value}\n")
         fh.write(f"Temperature: {config.temperature} K\n")
         fh.write(f"Data kind: {config.data_kind.value}\n")
+        if result.reference_solvent:
+            source = f", {result.reference_solvent_source}" if result.reference_solvent_source else ""
+            fh.write(f"Reference solvent: {result.reference_solvent}{source}\n")
+        else:
+            fh.write("Reference solvent: parameter-table default\n")
         if result.tms_shielding_1h is not None:
             fh.write(f"TMS 1H shielding: {result.tms_shielding_1h:.4f}\n")
         if result.tms_shielding_13c is not None:
             fh.write(f"TMS 13C shielding: {result.tms_shielding_13c:.4f}\n")
+        fh.write("Error convention: calc_minus_exp_ppm = predicted_shift_ppm - exp_shift_ppm\n")
+
+        match = result.parameter_match or {}
+        level_data = match.get("level_data") or {}
+        if match:
+            fh.write("\nParameter Provenance\n")
+            fh.write("-" * 72 + "\n")
+            fh.write(f"Requested theory level: {match.get('requested_level') or 'not detected'}\n")
+            fh.write(f"Resolved parameter level: {match.get('level_name') or 'none'}\n")
+            fh.write(f"Matched by: {match.get('matched_by') or 'unknown'}\n")
+            fh.write(f"Fallback used: {'yes' if match.get('fallback') else 'no'}\n")
+            if level_data:
+                fh.write(f"Family: {level_data.get('family', 'unknown')}\n")
+                fh.write(f"Original DP4+App name: {level_data.get('original_name', 'unknown')}\n")
+                fh.write(f"Source id: {level_data.get('source_id', 'unknown')}\n")
+                fh.write(f"DOI: {level_data.get('doi', 'unknown')}\n")
+                fh.write(f"DP4+App version: {level_data.get('app_version', 'unknown')}\n")
+                fh.write(f"License: {level_data.get('license', 'unknown')}\n")
+                fh.write(f"NMR level: {level_data.get('nmr_level', 'unknown')}\n")
+                fh.write(f"Geometry level: {level_data.get('geometry_level', 'unknown')}\n")
+                fh.write(f"Solvent model: {level_data.get('solvent_model', 'unknown')}\n")
+                if "CHCl3 default" in str(level_data.get("solvent", "")):
+                    fh.write(
+                        "Student-t error model: DP4+App standard CHCl3-trained parameter set; "
+                        "only equivalent TMS reference shielding is solvent-specific.\n"
+                    )
+                reference = level_data.get("reference_shielding", {})
+                if reference:
+                    ref_text = ", ".join(f"{nuc}={float(value):.4f}" for nuc, value in sorted(reference.items()))
+                    fh.write(f"Default equivalent reference shielding: {ref_text}\n")
+                fh.write("Nucleus formulas:\n")
+                for nucleus in result.nuclei:
+                    params = (level_data.get("nuclei") or {}).get(nucleus)
+                    if not params:
+                        fh.write(f"  {nucleus}: unavailable in this parameter level\n")
+                        continue
+                    fh.write(
+                        f"  {nucleus}: scaling_input={params.get('scaling_input', 'unknown')}; "
+                        f"requires_tms={params.get('requires_tms', 'unknown')}; "
+                        f"formula={params.get('formula', 'not specified')}\n"
+                    )
+            for warning in match.get("warnings", []):
+                fh.write(f"WARNING: {warning}\n")
+
+        fh.write("\nScoring Mode Formulas\n")
+        fh.write("-" * 72 + "\n")
+        for ss in result.scoring_sets:
+            fh.write(f"{ss.label} ({ss.mode}): {ss.formula or 'not specified'}\n")
+            for warning in ss.warnings:
+                fh.write(f"  WARNING: {warning}\n")
 
         # Linear fits
         if result.linear_fits:
             fh.write("\nPer-Isomer Linear Regression Fits\n")
             fh.write("-" * 72 + "\n")
+            fh.write(
+                "DP4+App-compatible unscaled-shift fits use: "
+                "computed = slope * experimental + intercept; "
+                "scaled = (computed - intercept) / slope.\n"
+            )
             fh.write(f"{'Candidate':20s} {'Nucleus':6s} {'Intercept':>10s} {'Slope':>10s} {'R2':>8s}\n")
             for lf in result.linear_fits:
                 fh.write(
@@ -146,7 +209,14 @@ def write_reports(
         for ss in result.scoring_sets:
             fh.write(f"\n{'─' * 72}\n")
             fh.write(f"Mode: {ss.label} ({ss.mode})\n")
+            if ss.formula:
+                fh.write(f"Formula: {ss.formula}\n")
+            for warning in ss.warnings:
+                fh.write(f"WARNING: {warning}\n")
             fh.write(f"{'─' * 72}\n")
+            if not ss.ranking:
+                fh.write("No scores generated for this mode.\n")
+                continue
             for idx, score in enumerate(ss.ranking, start=1):
                 fh.write(f"{idx}. {score.candidate_name}\n")
                 fh.write(f"   Joint probability: {score.joint_probability:.6f}\n")
@@ -190,10 +260,8 @@ def write_reports(
         generated.append(config_path)
 
     # set summary paths on result
-    for ss in result.scoring_sets:
-        if ss.mode == "scaled":
-            result.summary_file = os.path.join(config.output_dir, "dp4_summary.csv")
-            break
+    if legacy_set:
+        result.summary_file = os.path.join(config.output_dir, "dp4_summary.csv")
     result.report_file = report_path
     result.config_file = config_path
     result.generated_files = generated

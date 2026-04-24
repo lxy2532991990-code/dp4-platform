@@ -93,6 +93,7 @@ class ConformerRecord:
     coordinates: dict[int, tuple[float, float, float]] = field(default_factory=dict)
     shieldings_by_nucleus: dict[str, dict[int, float]] = field(default_factory=dict)
     theory_level: str = ""
+    reference_solvent: str | None = None
 
     def __post_init__(self) -> None:
         if self.combined_file:
@@ -161,6 +162,7 @@ class CandidateIsomer:
     directory: str
     collection: ConformerCollection = field(default_factory=ConformerCollection)
     averaged_shieldings: dict[str, dict[int, float]] = field(default_factory=dict)
+    tms_referenced_shifts: dict[str, dict[int, float]] = field(default_factory=dict)
     atom_hybridizations: dict[int, str] = field(default_factory=dict)
     unpaired_opt: list[OrcaFileInfo] = field(default_factory=list)
     unpaired_nmr: list[OrcaFileInfo] = field(default_factory=list)
@@ -183,8 +185,10 @@ class CandidateScore:
 class ScoringSet:
     """One set of candidate scores for a particular data mode."""
     mode: str  # "raw", "tms", "scaled"
-    label: str  # "Raw shielding", "TMS referenced", "Linear scaled"
+    label: str
     candidate_scores: list[CandidateScore] = field(default_factory=list)
+    formula: str = ""
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def ranking(self) -> list[CandidateScore]:
@@ -211,6 +215,9 @@ class DP4Result:
     linear_fits: list[LinearFit] = field(default_factory=list)
     tms_shielding_1h: float | None = None
     tms_shielding_13c: float | None = None
+    reference_solvent: str | None = None
+    reference_solvent_source: str = ""
+    parameter_match: dict = field(default_factory=dict)
     summary_file: str | None = None
     report_file: str | None = None
     config_file: str | None = None

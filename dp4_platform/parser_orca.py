@@ -9,6 +9,7 @@ from .config import DP4Config, ImagFreqPolicy
 from .experimental import normalize_nucleus
 from .models import ConformerRecord, ConformerStatus, FileRole, OrcaFileInfo
 from .parser_common import infer_conf_id, read_text
+from .solvent import normalize_reference_solvent
 
 _ENERGY_PATTERN = re.compile(r"FINAL SINGLE POINT ENERGY\s+([-\d.]+)")
 _GIBBS_PATTERN = re.compile(r"Final Gibbs free energy\s*\.+\s*([-\d.]+)\s*Eh", re.IGNORECASE)
@@ -43,6 +44,9 @@ _SHIELDING_TABLE_ROW_PATTERN = re.compile(
 _METHOD_PATTERN = re.compile(r"^DFT level of theory\s*\.+\s*(.+)$", re.IGNORECASE | re.MULTILINE)
 _BASIS_PATTERN = re.compile(r"^Basis set\s*\.+\s*(.+)$", re.IGNORECASE | re.MULTILINE)
 _INPUT_METHOD_PATTERN = re.compile(r"!\s*(.+)$", re.MULTILINE)
+_SOLVENT_LINE_PATTERN = re.compile(r"^Solvent:\s*\.+\s*(.+)$", re.IGNORECASE | re.MULTILINE)
+_SMD_SOLVENT_PATTERN = re.compile(r"\bSMDsolvent\s+['\"]?([^'\"\s]+)", re.IGNORECASE)
+_CPCM_SOLVENT_PATTERN = re.compile(r"\bCPCM\s*\(\s*([^)]+?)\s*\)", re.IGNORECASE)
 
 PROGRAM_MARKERS = (
     _ENERGY_PATTERN,
@@ -292,6 +296,31 @@ def _extract_theory_level(content: str) -> str:
     return ""
 
 
+def _extract_reference_solvent(content: str) -> str | None:
+    """Extract the requested solvent from ORCA output or echoed input."""
+    matches = _SOLVENT_LINE_PATTERN.findall(content)
+    if matches:
+        solvent = normalize_reference_solvent(matches[-1])
+        if solvent:
+            return solvent
+    match = _SMD_SOLVENT_PATTERN.search(content)
+    if match:
+        solvent = normalize_reference_solvent(match.group(1))
+        if solvent:
+            return solvent
+    match = _CPCM_SOLVENT_PATTERN.search(content)
+    if match:
+        solvent = normalize_reference_solvent(match.group(1))
+        if solvent:
+            return solvent
+    return None
+
+
+def _apply_input_metadata(content: str, record: ConformerRecord) -> None:
+    record.theory_level = _extract_theory_level(content)
+    record.reference_solvent = _extract_reference_solvent(content)
+
+
 def parse_orca_record_from_files(
     conf_id: int,
     config: DP4Config,
@@ -303,7 +332,7 @@ def parse_orca_record_from_files(
     try:
         if combined_path:
             content = read_text(combined_path)
-            record.theory_level = _extract_theory_level(content)
+            _apply_input_metadata(content, record)
             _extract_energies(content, record)
             _extract_frequencies(content, record, config)
             _extract_coordinates(content, record)
@@ -311,7 +340,7 @@ def parse_orca_record_from_files(
             return record
         if opt_path:
             opt_content = read_text(opt_path)
-            record.theory_level = _extract_theory_level(opt_content)
+            _apply_input_metadata(opt_content, record)
             _extract_energies(opt_content, record)
             _extract_frequencies(opt_content, record, config)
             _extract_coordinates(opt_content, record)
@@ -319,6 +348,8 @@ def parse_orca_record_from_files(
             nmr_content = read_text(nmr_path)
             if not record.theory_level:
                 record.theory_level = _extract_theory_level(nmr_content)
+            if not record.reference_solvent:
+                record.reference_solvent = _extract_reference_solvent(nmr_content)
             if not record.coordinates:
                 _extract_coordinates(nmr_content, record)
             _extract_shieldings(nmr_content, record)

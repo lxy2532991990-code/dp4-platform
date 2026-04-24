@@ -10,10 +10,10 @@ if __package__ in (None, ""):
     package_root = Path(__file__).resolve().parents[1]
     if str(package_root) not in sys.path:
         sys.path.insert(0, str(package_root))
-    from dp4_platform.config import DP4Config, ImagFreqPolicy, ScalingMode, WeightingStrategy
+    from dp4_platform.config import DP4Config, DataKind, ImagFreqPolicy, ScalingMode, WeightingStrategy
     from dp4_platform.pipeline import DP4Pipeline
 else:
-    from .config import DP4Config, ImagFreqPolicy, ScalingMode, WeightingStrategy
+    from .config import DP4Config, DataKind, ImagFreqPolicy, ScalingMode, WeightingStrategy
     from .pipeline import DP4Pipeline
 
 
@@ -50,8 +50,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--imag-freq-policy", choices=[item.value for item in ImagFreqPolicy], help="Imaginary frequency policy")
     parser.add_argument("--imag-freq-threshold", type=float, help="Imaginary frequency threshold in cm-1")
     parser.add_argument("--scaling-mode", choices=[item.value for item in ScalingMode], help="Scaling mode")
+    parser.add_argument("--data-kind", choices=[item.value for item in DataKind], help="Meaning of parsed NMR values")
     parser.add_argument("--program-mode", choices=["auto", "orca", "gaussian"], help="Program detection mode")
     parser.add_argument("--auto-pair-strategy", choices=["conf_id", "filename", "manual"], help="Auto pairing strategy")
+    parser.add_argument("--reference-solvent", help="Reference solvent for parameter-table TMS values, e.g. DMSO; default auto-detects")
     parser.add_argument("--no-recursive", action="store_true", help="Disable recursive search within candidate folders")
     return parser
 
@@ -90,10 +92,14 @@ def _config_from_args(args: argparse.Namespace) -> DP4Config:
         config.imag_freq_threshold = args.imag_freq_threshold
     if args.scaling_mode:
         config.scaling_mode = ScalingMode(args.scaling_mode)
+    if args.data_kind:
+        config.data_kind = DataKind(args.data_kind)
     if args.program_mode:
         config.program_mode = args.program_mode
     if args.auto_pair_strategy:
         config.auto_pair_strategy = args.auto_pair_strategy
+    if args.reference_solvent is not None:
+        config.reference_solvent = args.reference_solvent
     if args.no_recursive:
         config.recursive = False
 

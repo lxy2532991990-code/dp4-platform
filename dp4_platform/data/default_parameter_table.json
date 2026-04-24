@@ -1,11 +1,14 @@
 {
-  "description": "DP4+ parameter table with multiple DFT theory levels. Each level provides linear scaling (intercept + slope * shielding) and t-distribution error models for scaled (sDP4+) and unscaled (uDP4+) data, differentiated by carbon hybridization.",
+  "description": "DP4+ parameter table with multiple DFT theory levels. Current linear scaling coefficients are shielding-domain formulas (intercept + slope * sigma_sample); unscaled DP4+ terms require TMS-referenced chemical shifts.",
   "default_level": "mPW1PW91/6-31+G**",
   "levels": {
     "mPW1PW91/6-31+G**": {
       "source": "Grimblat, Zanardi, Sarotti, JOC 2015 (optimal level)",
       "nuclei": {
         "1H": {
+          "scaling_input": "shielding",
+          "formula": "delta_scaled = intercept + slope * sigma_sample",
+          "requires_tms": false,
           "intercept": 31.8018,
           "slope": -1.0936,
           "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 0.1563, "nu": 14.18},
@@ -16,6 +19,9 @@
           }
         },
         "13C": {
+          "scaling_input": "shielding",
+          "formula": "delta_scaled = intercept + slope * sigma_sample",
+          "requires_tms": false,
           "intercept": 191.4828,
           "slope": -1.0533,
           "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 1.6897, "nu": 11.38},
@@ -31,6 +37,9 @@
       "source": "Grimblat, Zanardi, Sarotti, JOC 2015",
       "nuclei": {
         "1H": {
+          "scaling_input": "shielding",
+          "formula": "delta_scaled = intercept + slope * sigma_sample",
+          "requires_tms": false,
           "intercept": 31.68,
           "slope": -0.97,
           "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 0.187, "nu": 14.18},
@@ -41,6 +50,9 @@
           }
         },
         "13C": {
+          "scaling_input": "shielding",
+          "formula": "delta_scaled = intercept + slope * sigma_sample",
+          "requires_tms": false,
           "intercept": 181.4,
           "slope": -1.0,
           "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 2.306, "nu": 11.38},
@@ -56,6 +68,9 @@
       "source": "Grimblat, Zanardi, Sarotti, JOC 2015",
       "nuclei": {
         "1H": {
+          "scaling_input": "shielding",
+          "formula": "delta_scaled = intercept + slope * sigma_sample",
+          "requires_tms": false,
           "intercept": 31.49,
           "slope": -0.95,
           "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 0.189, "nu": 14.18},
@@ -66,6 +81,9 @@
           }
         },
         "13C": {
+          "scaling_input": "shielding",
+          "formula": "delta_scaled = intercept + slope * sigma_sample",
+          "requires_tms": false,
           "intercept": 185.1,
           "slope": -1.02,
           "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 2.643, "nu": 11.38},
@@ -81,6 +99,9 @@
       "source": "Grimblat, Zanardi, Sarotti, JOC 2015 (PCM solvent)",
       "nuclei": {
         "1H": {
+          "scaling_input": "shielding",
+          "formula": "delta_scaled = intercept + slope * sigma_sample",
+          "requires_tms": false,
           "intercept": 31.48,
           "slope": -1.06,
           "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 0.163, "nu": 14.18},
@@ -91,6 +112,9 @@
           }
         },
         "13C": {
+          "scaling_input": "shielding",
+          "formula": "delta_scaled = intercept + slope * sigma_sample",
+          "requires_tms": false,
           "intercept": 186.4,
           "slope": -1.05,
           "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 1.673, "nu": 11.38},
@@ -105,6 +129,9 @@
   },
   "nuclei": {
     "1H": {
+      "scaling_input": "shielding",
+      "formula": "delta_scaled = intercept + slope * sigma_sample",
+      "requires_tms": false,
       "intercept": 31.68,
       "slope": -0.97,
       "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 0.187, "nu": 14.18},
@@ -115,6 +142,9 @@
       }
     },
     "13C": {
+      "scaling_input": "shielding",
+      "formula": "delta_scaled = intercept + slope * sigma_sample",
+      "requires_tms": false,
       "intercept": 181.4,
       "slope": -1.0,
       "scaled_error": {"distribution": "t", "mu": 0.0, "sigma": 2.306, "nu": 11.38},
