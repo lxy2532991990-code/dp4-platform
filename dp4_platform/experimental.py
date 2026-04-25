@@ -16,6 +16,24 @@ def normalize_nucleus(raw: str) -> str:
     return str(raw).strip()
 
 
+def _validate_exchange_groups(assignments: list[ExperimentalAssignment]) -> None:
+    by_group: dict[str, list[ExperimentalAssignment]] = {}
+    for assignment in assignments:
+        if not assignment.exchange_group:
+            continue
+        by_group.setdefault(assignment.exchange_group, []).append(assignment)
+    for group, members in by_group.items():
+        if len(members) != 2:
+            raise ValueError(
+                f"exchange_group '{group}' must pair exactly 2 rows; got {len(members)}"
+            )
+        nuclei = {member.nucleus for member in members}
+        if len(nuclei) != 1:
+            raise ValueError(
+                f"exchange_group '{group}' rows must share the same nucleus; got {sorted(nuclei)}"
+            )
+
+
 def load_experimental_assignments(path: str, allowed_nuclei: tuple[str, ...]) -> list[ExperimentalAssignment]:
     required = {"candidate_atom_id", "nucleus", "exp_shift_ppm"}
     assignments: list[ExperimentalAssignment] = []
@@ -55,9 +73,11 @@ def load_experimental_assignments(path: str, allowed_nuclei: tuple[str, ...]) ->
                     nucleus=nucleus,
                     exp_shift_ppm=exp_shift,
                     label=str(row.get("label", "")).strip(),
+                    exchange_group=str(row.get("exchange_group", "")).strip(),
                 )
             )
 
     if not assignments:
         raise ValueError("Experimental CSV contains no assignments")
+    _validate_exchange_groups(assignments)
     return assignments

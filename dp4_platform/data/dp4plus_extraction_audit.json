@@ -1,7 +1,7 @@
 {
   "package": "dp4plus-app",
   "version": "2.1.3",
-  "sdist_sha256": "220a82c8cea61b64df4f4e4f0feeb8ac7e5f62398bafe24d67f3459d61ce6f3d",
+  "sdist_sha256": "local-extracted",
   "level_count": 60,
   "expected_counts": {
     "DP4+": 24,
@@ -28,6 +28,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -46,6 +56,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -64,6 +84,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -82,6 +112,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -100,6 +140,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -118,6 +168,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -136,6 +196,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -154,6 +224,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -172,6 +252,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -190,6 +280,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -208,6 +308,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -226,6 +336,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -244,6 +364,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -262,6 +392,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -280,6 +420,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -298,6 +448,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -316,6 +476,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -334,6 +504,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -352,6 +532,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -370,6 +560,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -388,6 +588,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -406,6 +616,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -424,6 +644,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -442,6 +672,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -460,6 +700,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -478,6 +728,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -496,6 +756,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -514,6 +784,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -532,6 +812,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -550,6 +840,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -568,6 +868,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -586,6 +896,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -604,6 +924,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -622,6 +952,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -640,6 +980,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -658,6 +1008,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -676,6 +1036,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -694,6 +1064,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -712,6 +1092,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -730,6 +1120,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -748,6 +1148,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -766,6 +1176,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -784,6 +1204,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -802,6 +1232,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -820,6 +1260,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -838,6 +1288,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -856,6 +1316,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -874,6 +1344,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -892,6 +1372,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -910,6 +1400,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -928,6 +1428,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -946,6 +1456,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -964,6 +1484,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -982,6 +1512,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -1000,6 +1540,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -1018,6 +1568,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -1036,6 +1596,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -1054,6 +1624,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -1072,6 +1652,16 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     },
     {
@@ -1090,7 +1680,22 @@
       "reference_found": [
         "13C",
         "1H"
+      ],
+      "mstd_keys": [
+        "C_Br_sp2",
+        "C_Br_sp3",
+        "C_Cl_sp2",
+        "C_Cl_sp3",
+        "H_Br_sp2",
+        "H_Br_sp3",
+        "H_Cl_sp2",
+        "H_Cl_sp3"
       ]
     }
-  ]
+  ],
+  "mstd_workbooks": {
+    "MSTD-QM-Stand.xlsx": 24,
+    "MSTD-MM-Stand.xlsx": 36,
+    "MSTD-Custom-Stand.xlsx": 0
+  }
 }

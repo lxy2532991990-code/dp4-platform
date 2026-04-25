@@ -6,11 +6,36 @@ import csv
 import os
 
 from .config import DP4Config
-from .models import CandidateIsomer, DP4Result, ScoringSet
+from .models import CandidateIsomer, DP4Result, ScoringSet, ShiftRow
 
 
 def _safe_name(value: str) -> str:
     return "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in value)
+
+
+def _shift_csv_fieldnames() -> list[str]:
+    return [
+        "candidate_atom_id", "nucleus", "label",
+        "exp_shift_ppm", "predicted_shift_ppm", "calc_minus_exp_ppm",
+        "unscaled_shift_ppm", "exchange_group", "swapped_with", "halogen_neighbor",
+    ]
+
+
+def _shift_csv_row(row: ShiftRow) -> list[object]:
+    unscaled_text = "" if row.unscaled_shift_ppm is None else f"{row.unscaled_shift_ppm:.6f}"
+    swapped_text = "" if row.swapped_with is None else str(row.swapped_with)
+    return [
+        row.atom_id,
+        row.nucleus,
+        row.label,
+        f"{row.exp_shift_ppm:.6f}",
+        f"{row.predicted_shift_ppm:.6f}",
+        f"{row.error_ppm:.6f}",
+        unscaled_text,
+        row.exchange_group,
+        swapped_text,
+        row.halogen_neighbor,
+    ]
 
 
 def _write_summary_csv(
@@ -96,19 +121,9 @@ def write_reports(
             )
             with open(shift_path, "w", encoding="utf-8", newline="") as fh:
                 writer = csv.writer(fh)
-                writer.writerow([
-                    "candidate_atom_id", "nucleus", "label",
-                    "exp_shift_ppm", "predicted_shift_ppm", "calc_minus_exp_ppm",
-                ])
+                writer.writerow(_shift_csv_fieldnames())
                 for row in sorted(score.shift_rows, key=lambda item: (item.nucleus, item.atom_id)):
-                    writer.writerow([
-                        row.atom_id,
-                        row.nucleus,
-                        row.label,
-                        f"{row.exp_shift_ppm:.6f}",
-                        f"{row.predicted_shift_ppm:.6f}",
-                        f"{row.error_ppm:.6f}",
-                    ])
+                    writer.writerow(_shift_csv_row(row))
             generated.append(shift_path)
 
     # ---- analysis report ----

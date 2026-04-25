@@ -19,16 +19,22 @@ Required columns:
 - `nucleus`
 - `exp_shift_ppm`
 
-Optional column:
+Optional columns:
 
 - `label`
+- `exchange_group` — tag two rows with the same label (e.g. `a`, `b`) to mark a
+  diastereotopic pair (CH2 protons, isopropyl methyls, ...). The scorer
+  re-pairs the calculated values within each group against the experimental
+  shift order before computing errors. Each non-empty label must appear on
+  exactly two rows of the same nucleus.
 
 Example:
 
 ```csv
-candidate_atom_id,nucleus,exp_shift_ppm,label
-1,13C,11.2,C-1
-2,1H,2.45,H-2
+candidate_atom_id,nucleus,exp_shift_ppm,label,exchange_group
+1,13C,11.2,C-1,
+2,1H,2.45,H-2a,a
+3,1H,2.10,H-2b,a
 ```
 
 ## Candidate Layout

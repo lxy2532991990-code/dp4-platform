@@ -19,9 +19,11 @@ from .dp4 import (
 )
 from .energy import boltzmann_average_shieldings, compute_boltzmann_weights
 from .experimental import load_experimental_assignments
+from .halo import detect_halogen_neighbors
 from .hybridization import CarbonHyb, build_atom_hybridization_map
 from .models import CandidateIsomer, DP4Result
 from .parser import discover_candidate_directories, load_candidate_from_directory
+from .structure_model import infer_bonds
 from .report import write_reports
 from .solvent import normalize_reference_solvent
 from .tms_parser import parse_tms_file
@@ -167,7 +169,9 @@ class DP4Pipeline:
 
             for record in candidate.collection.usable_records:
                 if record.atom_elements and record.coordinates:
-                    hyb_map = build_atom_hybridization_map(record.atom_elements, record.coordinates)
+                    hyb_map, hyb_warnings = build_atom_hybridization_map(
+                        record.atom_elements, record.coordinates
+                    )
                     candidate.atom_hybridizations = {
                         atom_id: hyb.value for atom_id, hyb in hyb_map.items()
                     }
@@ -180,6 +184,24 @@ class DP4Pipeline:
                         if h == CarbonHyb.SP3 and record.atom_elements.get(aid, "").upper() == "C"
                     )
                     self.log(f"  Hybridization: {sp2} sp2, {sp3} sp3 carbons detected")
+                    for warning in hyb_warnings:
+                        self.log(f"  Hybridization warning: {warning}")
+                    bonds = infer_bonds(record.coordinates, record.atom_elements)
+                    candidate.halogen_neighbor = detect_halogen_neighbors(
+                        record.atom_elements, bonds
+                    )
+                    if candidate.halogen_neighbor:
+                        carbons = sum(
+                            1 for aid in candidate.halogen_neighbor
+                            if record.atom_elements.get(aid, "").upper() == "C"
+                        )
+                        hydrogens = sum(
+                            1 for aid in candidate.halogen_neighbor
+                            if record.atom_elements.get(aid, "").upper() == "H"
+                        )
+                        self.log(
+                            f"  HALO: {carbons} C and {hydrogens} H bonded/adjacent to halogens"
+                        )
                     break
 
             self.candidates.append(candidate)

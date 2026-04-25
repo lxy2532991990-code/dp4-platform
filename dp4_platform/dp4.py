@@ -16,6 +16,8 @@ from difflib import get_close_matches
 from importlib import resources
 
 from .config import DP4Config, ScalingMode, DataKind
+from .diastereotopic import reassign_diastereotopic_pairs
+from .halo import apply_mstd_unscaled, mstd_key
 from .models import (
     CandidateIsomer,
     CandidateScore,
@@ -64,6 +66,23 @@ def validate_parameter_table(parameter_table: dict) -> dict:
                 raise ValueError(f"Level '{level_name}' nucleus {nucleus} lacks scaled_error")
             if _get_scaling_input(params) not in {"shielding", "unscaled_shift"}:
                 raise ValueError(f"Level '{level_name}' nucleus {nucleus} has invalid scaling_input")
+            mstd = params.get("mstd_reference")
+            if mstd is not None:
+                if not isinstance(mstd, dict):
+                    raise ValueError(
+                        f"Level '{level_name}' nucleus {nucleus} mstd_reference must be a mapping"
+                    )
+                for key, entry in mstd.items():
+                    if not isinstance(entry, dict):
+                        raise ValueError(
+                            f"Level '{level_name}' nucleus {nucleus} mstd_reference['{key}'] must be a mapping"
+                        )
+                    for field_name in ("shielding_standard", "reference_value"):
+                        if not isinstance(entry.get(field_name), (int, float)):
+                            raise ValueError(
+                                f"Level '{level_name}' nucleus {nucleus} mstd_reference['{key}'] "
+                                f"missing numeric '{field_name}'"
+                            )
     return parameter_table
 
 
@@ -590,6 +609,75 @@ def _hyb_key_for_nucleus(atom_id: int, nucleus: str, candidate: CandidateIsomer)
     return hyb
 
 
+def _halo_override_value_map(
+    candidate: CandidateIsomer,
+    nucleus: str,
+    value_map: dict[int, float],
+    params: dict,
+    warnings_sink: list[str] | None,
+    seen_warnings: set[str] | None = None,
+) -> tuple[dict[int, float], dict[int, str]]:
+    """Replace halogen-adjacent atom values with MSTD-corrected unscaled shifts.
+
+    Returns ``(new_map, applied_halogens)`` where ``applied_halogens`` records
+    which atom_ids actually got the override (so callers can populate
+    ``ShiftRow.halogen_neighbor``). Atoms without an MSTD entry, or with
+    unknown hybridization, fall back to the input value and emit a one-time
+    warning into ``warnings_sink``.
+    """
+    halogen_map = candidate.halogen_neighbor or {}
+    if not halogen_map:
+        return value_map, {}
+
+    mstd_table = params.get("mstd_reference") or {}
+    raw_shieldings = candidate.averaged_shieldings.get(nucleus, {}) if candidate.averaged_shieldings else {}
+    new_map = dict(value_map)
+    applied: dict[int, str] = {}
+    seen_warnings = seen_warnings if seen_warnings is not None else set()
+
+    for atom_id, halogen in halogen_map.items():
+        if atom_id not in new_map:
+            continue
+        raw_hyb = candidate.atom_hybridizations.get(atom_id)
+        hyb = str(raw_hyb).lower() if raw_hyb is not None else "unknown"
+        if hyb not in {"sp2", "sp3"}:
+            warning_key = f"halo:{candidate.name}:{atom_id}:unknown_hyb"
+            if warnings_sink is not None and warning_key not in seen_warnings:
+                warnings_sink.append(
+                    f"HALO override skipped for atom {atom_id} ({nucleus}) on candidate "
+                    f"'{candidate.name}': hybridization '{hyb}' is outside sp2/sp3."
+                )
+                seen_warnings.add(warning_key)
+            continue
+        key = mstd_key(nucleus, halogen, hyb)
+        if key is None:
+            continue
+        entry = mstd_table.get(key)
+        if entry is None:
+            warning_key = f"halo:{nucleus}:{key}"
+            if warnings_sink is not None and warning_key not in seen_warnings:
+                warnings_sink.append(
+                    f"HALO override skipped: parameter table has no mstd_reference['{key}'] "
+                    f"for nucleus {nucleus}. Falling back to default unscaled shift."
+                )
+                seen_warnings.add(warning_key)
+            continue
+        sigma = raw_shieldings.get(atom_id)
+        if sigma is None:
+            warning_key = f"halo:missing_sigma:{candidate.name}:{atom_id}"
+            if warnings_sink is not None and warning_key not in seen_warnings:
+                warnings_sink.append(
+                    f"HALO override skipped for atom {atom_id} ({nucleus}) on candidate "
+                    f"'{candidate.name}': raw shielding unavailable."
+                )
+                seen_warnings.add(warning_key)
+            continue
+        new_map[atom_id] = apply_mstd_unscaled(sigma, entry)
+        applied[atom_id] = halogen
+
+    return new_map, applied
+
+
 # ---------------------------------------------------------------------------
 # scoring helpers
 # ---------------------------------------------------------------------------
@@ -701,6 +789,8 @@ def _score_candidate_values(
     mode: str,
     unscaled_values: dict[str, dict[int, float]] | None = None,
     linear_fit_map: dict[str, dict[str, tuple[float, float]]] | None = None,
+    warnings_sink: list[str] | None = None,
+    halo_warning_dedup: set[str] | None = None,
 ) -> CandidateScore:
     score = CandidateScore(candidate_name=candidate.name)
 
@@ -724,6 +814,46 @@ def _score_candidate_values(
         else:
             sc_intercept = float(params.get("intercept", 0.0))
             sc_slope = float(params.get("slope", 1.0))
+
+        # HALO MSTD override (mode-dependent, runs before diastereotopic swap so the
+        # swap re-pairs against post-override values, matching upstream HALO_module).
+        halo_applied: dict[int, str] = {}
+        if mode == "tms" and candidate.halogen_neighbor:
+            values_for_nucleus, halo_applied = _halo_override_value_map(
+                candidate, nucleus, values_for_nucleus, params,
+                warnings_sink, halo_warning_dedup,
+            )
+
+        sense = "shielding" if mode == "raw" or scaling_input == "shielding" else "shift"
+        nucleus_calc_map = {
+            a.candidate_atom_id: values_for_nucleus.get(a.candidate_atom_id)
+            for a in nucleus_assignments
+            if values_for_nucleus.get(a.candidate_atom_id) is not None
+        }
+        swapped_calc, swaps = reassign_diastereotopic_pairs(
+            nucleus_assignments, nucleus_calc_map, sense=sense
+        )
+        if swaps:
+            values_for_nucleus = {**values_for_nucleus, **swapped_calc}
+        unscaled_for_nucleus = dict((unscaled_values or {}).get(nucleus, {}))
+        unscaled_halo_applied: dict[int, str] = {}
+        if mode == "scaled" and unscaled_for_nucleus and candidate.halogen_neighbor:
+            unscaled_for_nucleus, unscaled_halo_applied = _halo_override_value_map(
+                candidate, nucleus, unscaled_for_nucleus, params,
+                warnings_sink, halo_warning_dedup,
+            )
+        if swaps and unscaled_for_nucleus:
+            for atom_a, atom_b in swaps:
+                if atom_a in unscaled_for_nucleus and atom_b in unscaled_for_nucleus:
+                    unscaled_for_nucleus[atom_a], unscaled_for_nucleus[atom_b] = (
+                        unscaled_for_nucleus[atom_b],
+                        unscaled_for_nucleus[atom_a],
+                    )
+        swap_lookup: dict[int, int] = {}
+        for atom_a, atom_b in swaps:
+            swap_lookup[atom_a] = atom_b
+            swap_lookup[atom_b] = atom_a
+        applied_halogens = halo_applied or unscaled_halo_applied
 
         errors: list[float] = []
         predicted_by_atom: dict[int, float] = {}
@@ -755,12 +885,15 @@ def _score_candidate_values(
                     predicted_shift_ppm=predicted,
                     error_ppm=error,
                     label=assignment.label,
+                    unscaled_shift_ppm=unscaled_for_nucleus.get(atom_id),
+                    exchange_group=assignment.exchange_group,
+                    swapped_with=swap_lookup.get(atom_id),
+                    halogen_neighbor=applied_halogens.get(atom_id, ""),
                 )
             )
 
         if mode == "scaled":
             nucleus_log_lik = _compute_log_likelihood(errors, _get_scaled_error_params(params))
-            unscaled_for_nucleus = (unscaled_values or {}).get(nucleus, {})
             for assignment in nucleus_assignments:
                 atom_id = assignment.candidate_atom_id
                 unscaled_value = unscaled_for_nucleus.get(atom_id)
@@ -915,6 +1048,10 @@ def score_candidates_all_modes(
     tms_maps = _tms_value_maps(candidates)
     tms_nuclei = _available_nuclei_for_values(candidates, tms_maps, config.nuclei)
 
+    raw_warnings_sink: list[str] = [
+        "Raw mode is a fallback diagnostic and is not the classical uDP4+ chemical-shift model."
+    ]
+    raw_dedup: set[str] = set()
     raw_scores = [
         _score_candidate_values(
             candidate=c,
@@ -924,6 +1061,8 @@ def score_candidates_all_modes(
             theory_level=theory_level,
             calc_values=_candidate_value_map(c, raw_maps),
             mode="raw",
+            warnings_sink=raw_warnings_sink,
+            halo_warning_dedup=raw_dedup,
         )
         for c in candidates
     ]
@@ -935,13 +1074,12 @@ def score_candidates_all_modes(
             label="Raw shielding diagnostic",
             candidate_scores=raw_sorted,
             formula="diagnostic score on sigma_sample; TMS is not used",
-            warnings=[
-                "Raw mode is a fallback diagnostic and is not the classical uDP4+ chemical-shift model."
-            ],
+            warnings=raw_warnings_sink,
         )
     )
 
     tms_warnings: list[str] = []
+    tms_dedup: set[str] = set()
     if not tms_nuclei:
         tms_warnings.append("No TMS-referenced chemical shifts are available; tms mode was not scored.")
         tms_scores = []
@@ -958,6 +1096,8 @@ def score_candidates_all_modes(
                 theory_level=theory_level,
                 calc_values=_candidate_value_map(c, tms_maps),
                 mode="tms",
+                warnings_sink=tms_warnings,
+                halo_warning_dedup=tms_dedup,
             )
             for c in candidates
         ]
@@ -997,6 +1137,7 @@ def score_candidates_all_modes(
     else:
         scaled_warnings.append("Scaled score omits all uDP4+ unscaled terms because TMS-referenced shifts are unavailable.")
 
+    scaled_dedup: set[str] = set()
     scaled_scores = [
         _score_candidate_values(
             candidate=c,
@@ -1008,6 +1149,8 @@ def score_candidates_all_modes(
             mode="scaled",
             unscaled_values=_candidate_value_map(c, tms_maps),
             linear_fit_map=linear_fit_map,
+            warnings_sink=scaled_warnings,
+            halo_warning_dedup=scaled_dedup,
         )
         for c in candidates
     ] if scaled_nuclei else []

@@ -5,6 +5,7 @@
     "package": "dp4plus-app",
     "version": "2.1.3",
     "sdist_sha256": "220a82c8cea61b64df4f4e4f0feeb8ac7e5f62398bafe24d67f3459d61ce6f3d",
+    "source_root": "DP4plus-App/pypi_pkg/extracted/dp4plus_app",
     "pypi_url": "https://pypi.org/project/dp4plus-app/",
     "extraction_tool": "tools/extract_dp4plus_app_parameters.py"
   },
@@ -94,7 +95,25 @@
             }
           },
           "reference_shielding": 189.7149,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 71.214,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 149.5506,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 69.8154,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 138.856042809197,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -129,7 +148,25 @@
             }
           },
           "reference_shielding": 32.182616666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 26.3941,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.7924,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 26.5455,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.902270475273,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -203,7 +240,25 @@
             }
           },
           "reference_shielding": 191.549975,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 70.0715,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 150.6714,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 70.0715,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 139.701360953369,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -238,7 +293,25 @@
             }
           },
           "reference_shielding": 31.714158333333,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.6891,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.2335,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.8875,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.413776486535,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -312,7 +385,25 @@
             }
           },
           "reference_shielding": 192.589825,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 71.9139,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 150.0719,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 70.0794,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 139.215060389217,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -347,7 +438,25 @@
             }
           },
           "reference_shielding": 31.637708333333,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.3136,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.0488,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.5295,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.298334818542,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -421,7 +530,25 @@
             }
           },
           "reference_shielding": 183.61345,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 55.7027,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 138.9488,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 52.6502,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 127.327938826356,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -456,7 +583,25 @@
             }
           },
           "reference_shielding": 32.2012,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 26.3221,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.8057,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 26.3197,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.895635237845,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -530,7 +675,25 @@
             }
           },
           "reference_shielding": 183.89035,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 54.7206,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 138.6959,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 51.5914,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 126.766645023898,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -565,7 +728,25 @@
             }
           },
           "reference_shielding": 31.915383333333,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.8551,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.4812,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.9064,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.617183386639,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -639,7 +820,25 @@
             }
           },
           "reference_shielding": 183.425275,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 50.0228,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 137.9123,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 50.0228,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 126.110681351203,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -674,7 +873,25 @@
             }
           },
           "reference_shielding": 31.901683333333,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.6833,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.3875,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7068,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.522922235561,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -800,7 +1017,25 @@
             }
           },
           "reference_shielding": 190.0717,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 73.3206,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 147.6611,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 71.7879,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 137.744841884594,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -835,7 +1070,25 @@
             }
           },
           "reference_shielding": 32.176858333333,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 26.3768,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.6097,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 26.516,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.740579060439,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -961,7 +1214,25 @@
             }
           },
           "reference_shielding": 191.893575,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 73.6455,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 148.7578,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 72.0395,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 138.555320191943,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -996,7 +1267,25 @@
             }
           },
           "reference_shielding": 31.708175,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.674,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.0494,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.8586,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.249550768915,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -1122,7 +1411,25 @@
             }
           },
           "reference_shielding": 193.071425,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 74.1542,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 147.9451,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 72.0623,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 138.001393386298,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -1157,7 +1464,25 @@
             }
           },
           "reference_shielding": 31.635366666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.2917,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 27.8586,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.486,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.126608818819,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -1283,7 +1608,25 @@
             }
           },
           "reference_shielding": 184.105375,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 58.0676,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 136.8757,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 54.7338,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 126.22044296931,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -1318,7 +1661,25 @@
             }
           },
           "reference_shielding": 32.198466666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 26.3068,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.6253,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 26.2858,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.744200910629,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -1444,7 +1805,25 @@
             }
           },
           "reference_shielding": 184.350375,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 57.1167,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 136.5998,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 53.7048,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 125.617821429154,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -1479,7 +1858,25 @@
             }
           },
           "reference_shielding": 31.913491666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.8509,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.3022,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.8828,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.46465995522,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -1605,7 +2002,25 @@
             }
           },
           "reference_shielding": 183.888775,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 55.729,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 135.7166,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 52.2021,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 125.009324272757,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -1640,7 +2055,25 @@
             }
           },
           "reference_shielding": 31.901641666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.6644,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.2001,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.6686,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.36089838972,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -1714,7 +2147,25 @@
             }
           },
           "reference_shielding": 193.86025,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 74.5084,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 154.0694,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 72.761,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 143.651652870933,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -1749,7 +2200,25 @@
             }
           },
           "reference_shielding": 32.115866666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 26.2852,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.7628,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 26.4325,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.87953573266,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -1823,7 +2292,25 @@
             }
           },
           "reference_shielding": 195.5355,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 74.7759,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 155.1118,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 72.9629,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 144.40876685635,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -1858,7 +2345,25 @@
             }
           },
           "reference_shielding": 31.643141666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.5803,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.2053,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7764,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.393043940773,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -1932,7 +2437,25 @@
             }
           },
           "reference_shielding": 196.095475,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 75.1084,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 154.3946,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 72.827,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 143.9247571969,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -1967,7 +2490,25 @@
             }
           },
           "reference_shielding": 31.566091666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.2424,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.0385,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.4551,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.28539355925,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -2041,7 +2582,25 @@
             }
           },
           "reference_shielding": 188.845075,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 60.7456,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 144.3225,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 57.5474,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 133.054067339042,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -2076,7 +2635,25 @@
             }
           },
           "reference_shielding": 32.373683333333,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 26.2283,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.7437,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 26.2282,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.836015836385,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -2150,7 +2727,25 @@
             }
           },
           "reference_shielding": 189.158925,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 59.7481,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 144.0766,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 56.4739,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 132.50353757713,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -2185,7 +2780,25 @@
             }
           },
           "reference_shielding": 32.082933333333,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.745,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.4208,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7961,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.556180328725,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -2259,7 +2872,25 @@
             }
           },
           "reference_shielding": 188.678675,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 58.3939,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 143.3281,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 55.1078,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 131.834685198061,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -2294,7 +2925,25 @@
             }
           },
           "reference_shielding": 32.06605,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 28.3261,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.3261,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.6134,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.461054544358,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -2420,7 +3069,25 @@
             }
           },
           "reference_shielding": 194.26725,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 76.68,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 152.1317,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 74.7657,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 142.497414189294,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -2455,7 +3122,25 @@
             }
           },
           "reference_shielding": 32.107316666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 26.2615,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.5716,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 26.3959,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.710569914791,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -2581,7 +3266,25 @@
             }
           },
           "reference_shielding": 195.92845,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 76.9482,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 153.1489,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 74.9664,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 143.219892785465,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -2616,7 +3319,25 @@
             }
           },
           "reference_shielding": 31.634175,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.5586,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.0117,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7402,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.220689268385,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -2742,7 +3463,25 @@
             }
           },
           "reference_shielding": 196.609475,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 77.4004,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 152.2521,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 74.8367,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 142.692574137759,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -2777,7 +3516,25 @@
             }
           },
           "reference_shielding": 31.559991666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.213,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 27.839,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.4042,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.106867792155,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -2903,7 +3660,25 @@
             }
           },
           "reference_shielding": 188.237425,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 63.1145,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 142.2438,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 59.6025,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 131.930872333174,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -2938,7 +3713,25 @@
             }
           },
           "reference_shielding": 32.090308333333,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 26.2071,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.5568,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 26.1877,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.680059094843,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -3064,7 +3857,25 @@
             }
           },
           "reference_shielding": 188.48755,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 62.1522,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 141.9784,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 58.5626,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 131.340899689015,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -3099,7 +3910,25 @@
             }
           },
           "reference_shielding": 31.79495,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.7352,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.2346,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7663,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.398646741232,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -3225,7 +4054,25 @@
             }
           },
           "reference_shielding": 188.018525,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 60.8293,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 141.1522,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 57.2588,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 130.71751999224,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -3260,7 +4107,25 @@
             }
           },
           "reference_shielding": 31.779391666667,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.5636,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.132,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.5691,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.294064540493,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -3334,7 +4199,25 @@
             }
           },
           "reference_shielding": 192.4203,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 75.1516,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 154.7781,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 73.6836,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 144.674996093856,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -3369,7 +4252,25 @@
             }
           },
           "reference_shielding": 31.8335,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.8385,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.3728,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.9846,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.448959387673,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -3495,7 +4396,25 @@
             }
           },
           "reference_shielding": 192.7795,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 77.3383,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 153.5105,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 75.6956,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 144.165953586134,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -3530,7 +4449,25 @@
             }
           },
           "reference_shielding": 31.8278,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.8258,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.2077,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.9593,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.325858187327,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -3656,7 +4593,25 @@
             }
           },
           "reference_shielding": 193.5031,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 77.4307,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 153.6611,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 76.1232,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 144.207753925394,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -3691,7 +4646,25 @@
             }
           },
           "reference_shielding": 31.7953,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.7311,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.1444,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.836,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.234275561068,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -3765,7 +4738,25 @@
             }
           },
           "reference_shielding": 193.2035,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 75.3233,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 154.2928,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 73.5034,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 144.156971219271,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -3800,7 +4791,25 @@
             }
           },
           "reference_shielding": 31.7481,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.4191,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.187,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.5927,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.311632198399,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -3926,7 +4935,25 @@
             }
           },
           "reference_shielding": 193.7214,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 77.6556,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 152.8644,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 75.5235,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 143.610703813491,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -3961,7 +4988,25 @@
             }
           },
           "reference_shielding": 31.7457,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.3991,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.0172,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.5525,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.186264701871,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -4087,7 +5132,25 @@
             }
           },
           "reference_shielding": 194.5476,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 78.0743,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 152.9347,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 76.0594,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 143.587115328708,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -4122,7 +5185,25 @@
             }
           },
           "reference_shielding": 31.7107,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.2892,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 27.9317,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.409,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.082698441042,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -4196,7 +5277,25 @@
             }
           },
           "reference_shielding": 184.3023,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 57.0703,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 142.5789,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 53.7199,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 131.469820348263,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -4231,7 +5330,25 @@
             }
           },
           "reference_shielding": 32.0117,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.7885,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.5286,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7704,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.504102039656,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -4357,7 +5474,25 @@
             }
           },
           "reference_shielding": 184.7969,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 59.5841,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 141.1175,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 55.9148,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 131.047945350577,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -4392,7 +5527,25 @@
             }
           },
           "reference_shielding": 32.0117,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.771,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.3616,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7347,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.389956104599,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -4518,7 +5671,25 @@
             }
           },
           "reference_shielding": 185.5842,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 60.0335,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 141.1374,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 56.4887,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 131.048701365493,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -4553,7 +5724,25 @@
             }
           },
           "reference_shielding": 31.9783,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.6645,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.2778,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.5985,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.293502074854,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -4631,7 +5820,25 @@
             }
           },
           "reference_shielding": 196.8172,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 66.5016,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 160.713,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 63.7841,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 149.512888977503,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -4666,7 +5873,25 @@
             }
           },
           "reference_shielding": 31.8795,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.546,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.5138,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7134,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.548234884538,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -4802,7 +6027,25 @@
             }
           },
           "reference_shielding": 197.2237,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 68.9186,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 159.1098,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 65.9004,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 148.799708942117,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -4837,7 +6080,25 @@
             }
           },
           "reference_shielding": 31.8718,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.5271,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.3243,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.677,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.402632751671,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -4973,7 +6234,25 @@
             }
           },
           "reference_shielding": 198.0031,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 68.9225,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 159.2852,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 66.252,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 148.802865608846,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -5008,7 +6287,25 @@
             }
           },
           "reference_shielding": 31.8355,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.4242,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.2586,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.5429,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.302418303797,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -5086,7 +6383,25 @@
             }
           },
           "reference_shielding": 197.2808,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 66.6518,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 160.103,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 63.4026,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 148.80226397568,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -5121,7 +6436,25 @@
             }
           },
           "reference_shielding": 31.8022,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.1894,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.3631,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.3282,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.412313518249,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -5257,7 +6590,25 @@
             }
           },
           "reference_shielding": 197.8247,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 69.2155,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 158.3542,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 65.5203,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 148.068584153612,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -5292,7 +6643,25 @@
             }
           },
           "reference_shielding": 31.797,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.1615,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.1677,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.2761,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.263347370911,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -5428,7 +6797,25 @@
             }
           },
           "reference_shielding": 198.6965,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 69.5061,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 158.4652,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 65.9522,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 148.020159282308,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -5463,7 +6850,25 @@
             }
           },
           "reference_shielding": 31.7583,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.0431,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.0823,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.1217,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.151564836028,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -5541,7 +6946,25 @@
             }
           },
           "reference_shielding": 188.9473,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 48.9585,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 148.6507,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 44.5061,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 136.377323891657,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -5576,7 +6999,25 @@
             }
           },
           "reference_shielding": 32.0649,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.5778,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.6901,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.5107,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.583912452836,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -5712,7 +7153,25 @@
             }
           },
           "reference_shielding": 189.4623,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 51.6738,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 146.809,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 46.7805,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 135.680177467982,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -5747,7 +7206,25 @@
             }
           },
           "reference_shielding": 32.0616,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.5541,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.4974,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.4673,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.446206300976,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -5883,7 +7360,25 @@
             }
           },
           "reference_shielding": 190.29,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 51.982,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 146.8524,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 47.2367,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 135.600931508243,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -5918,7 +7413,25 @@
             }
           },
           "reference_shielding": 32.0237,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.4413,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.4137,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.3226,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.340936364097,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -5992,7 +7505,25 @@
             }
           },
           "reference_shielding": 196.39,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 78.2801,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 159.3662,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 76.4282,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 149.460505394816,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -6027,7 +7558,25 @@
             }
           },
           "reference_shielding": 31.7615,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.7184,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.3416,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.8666,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.418820095853,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -6153,7 +7702,25 @@
             }
           },
           "reference_shielding": 196.7961,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 80.5392,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 158.0607,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 78.4726,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 148.926819348787,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -6188,7 +7755,25 @@
             }
           },
           "reference_shielding": 31.753,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.6988,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.1671,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.8337,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.286760957672,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -6314,7 +7899,25 @@
             }
           },
           "reference_shielding": 197.5835,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 80.544,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 158.2375,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 78.8522,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 148.999035894906,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -6349,7 +7952,25 @@
             }
           },
           "reference_shielding": 31.7158,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.5957,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.1025,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7013,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.190183984066,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -6423,7 +8044,25 @@
             }
           },
           "reference_shielding": 196.7222,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 78.4188,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 158.7448,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 76.1358,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 148.949486167287,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -6458,7 +8097,25 @@
             }
           },
           "reference_shielding": 31.6759,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.3407,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.174,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.5153,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.290357661639,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -6584,7 +8241,25 @@
             }
           },
           "reference_shielding": 197.2699,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 80.8064,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 157.3047,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 78.1784,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 148.398162216177,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -6619,7 +8294,25 @@
             }
           },
           "reference_shielding": 31.6701,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.313,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 27.9951,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.4674,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.15622240656,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -6745,7 +8438,25 @@
             }
           },
           "reference_shielding": 198.1514,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 81.0806,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 157.4251,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 78.6374,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 148.428057025426,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -6780,7 +8491,25 @@
             }
           },
           "reference_shielding": 31.6306,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.1948,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 27.911,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.3155,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.04962216966,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -6854,7 +8583,25 @@
             }
           },
           "reference_shielding": 188.423,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 62.0417,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 148.0507,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 58.6484,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 137.218467586493,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -6889,7 +8636,25 @@
             }
           },
           "reference_shielding": 31.8925,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.6874,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.4653,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.6742,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.439295253365,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -7015,7 +8780,25 @@
             }
           },
           "reference_shielding": 188.9173,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 64.5594,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 146.5997,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 60.8103,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 136.780685918807,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -7050,7 +8833,25 @@
             }
           },
           "reference_shielding": 31.8891,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.6641,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.2916,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.6322,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.31741046147,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -7176,7 +8977,25 @@
             }
           },
           "reference_shielding": 189.72,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 64.8636,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 146.6642,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 61.2895,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 136.817150997106,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -7211,7 +9030,25 @@
             }
           },
           "reference_shielding": 31.8517,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.5513,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.2098,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.4894,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.218459580457,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -7289,7 +9126,25 @@
             }
           },
           "reference_shielding": 197.0573,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 79.6047,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 162.0395,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 76.998,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 151.236217032866,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -7324,7 +9179,25 @@
             }
           },
           "reference_shielding": 31.8252,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.8412,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.5019,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.9591,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.53076293931,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -7460,7 +9333,25 @@
             }
           },
           "reference_shielding": 197.4551,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 81.898,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 160.6614,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 79.0664,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 150.627630411124,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -7495,7 +9386,25 @@
             }
           },
           "reference_shielding": 31.8174,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.8198,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.3207,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.9241,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.392093896561,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -7631,7 +9540,25 @@
             }
           },
           "reference_shielding": 198.2238,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 81.9246,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 160.8378,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 79.4448,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 150.67098270619,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -7666,7 +9593,25 @@
             }
           },
           "reference_shielding": 31.7812,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.7177,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.2559,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7913,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.294451148508,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -7744,7 +9689,25 @@
             }
           },
           "reference_shielding": 197.4172,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 79.7745,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 161.4017,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 76.7477,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 150.750880025014,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -7779,7 +9742,25 @@
             }
           },
           "reference_shielding": 31.741,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.4741,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.3434,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.6235,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.41018271609,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -7915,7 +9896,25 @@
             }
           },
           "reference_shielding": 197.9504,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 82.1944,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 159.8784,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 78.8139,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 150.109639555115,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -7950,7 +9949,25 @@
             }
           },
           "reference_shielding": 31.7356,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.4443,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.1573,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.5733,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.269159972906,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -8086,7 +10103,25 @@
             }
           },
           "reference_shielding": 198.8107,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 82.4842,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 160.0055,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 79.2694,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 150.110871596328,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -8121,7 +10156,25 @@
             }
           },
           "reference_shielding": 31.6972,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.3271,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.0741,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.4206,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.162157869032,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -8199,7 +10252,25 @@
             }
           },
           "reference_shielding": 189.274,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 63.2601,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 151.0362,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 59.0622,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 138.83831390823,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -8234,7 +10305,25 @@
             }
           },
           "reference_shielding": 31.9713,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.8116,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.6645,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.778,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.569355101415,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -8370,7 +10459,25 @@
             }
           },
           "reference_shielding": 189.7624,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 65.789,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 149.5392,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 61.2462,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 138.2949656055,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -8405,7 +10512,25 @@
             }
           },
           "reference_shielding": 31.9683,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.7843,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.4849,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.7332,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.439583086598,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     },
@@ -8541,7 +10666,25 @@
             }
           },
           "reference_shielding": 190.5533,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "C_Br_sp2": {
+              "shielding_standard": 66.1195,
+              "reference_value": 104.75
+            },
+            "C_Br_sp3": {
+              "shielding_standard": 149.6153,
+              "reference_value": 27.89
+            },
+            "C_Cl_sp2": {
+              "shielding_standard": 61.7225,
+              "reference_value": 117.42
+            },
+            "C_Cl_sp3": {
+              "shielding_standard": 138.297963534548,
+              "reference_value": 46.91
+            }
+          }
         },
         "1H": {
           "scaling_input": "unscaled_shift",
@@ -8576,7 +10719,25 @@
             }
           },
           "reference_shielding": 31.9318,
-          "reference_source": "DP4+App standard table"
+          "reference_source": "DP4+App standard table",
+          "mstd_reference": {
+            "H_Br_sp2": {
+              "shielding_standard": 25.6715,
+              "reference_value": 6.16
+            },
+            "H_Br_sp3": {
+              "shielding_standard": 28.4033,
+              "reference_value": 3.427
+            },
+            "H_Cl_sp2": {
+              "shielding_standard": 25.5885,
+              "reference_value": 5.59
+            },
+            "H_Cl_sp3": {
+              "shielding_standard": 28.339110947056,
+              "reference_value": 3.52
+            }
+          }
         }
       }
     }
@@ -8615,7 +10776,25 @@
         }
       },
       "reference_shielding": 196.095475,
-      "reference_source": "DP4+App standard table"
+      "reference_source": "DP4+App standard table",
+      "mstd_reference": {
+        "C_Br_sp2": {
+          "shielding_standard": 75.1084,
+          "reference_value": 104.75
+        },
+        "C_Br_sp3": {
+          "shielding_standard": 154.3946,
+          "reference_value": 27.89
+        },
+        "C_Cl_sp2": {
+          "shielding_standard": 72.827,
+          "reference_value": 117.42
+        },
+        "C_Cl_sp3": {
+          "shielding_standard": 143.9247571969,
+          "reference_value": 46.91
+        }
+      }
     },
     "1H": {
       "scaling_input": "unscaled_shift",
@@ -8650,7 +10829,25 @@
         }
       },
       "reference_shielding": 31.566091666667,
-      "reference_source": "DP4+App standard table"
+      "reference_source": "DP4+App standard table",
+      "mstd_reference": {
+        "H_Br_sp2": {
+          "shielding_standard": 25.2424,
+          "reference_value": 6.16
+        },
+        "H_Br_sp3": {
+          "shielding_standard": 28.0385,
+          "reference_value": 3.427
+        },
+        "H_Cl_sp2": {
+          "shielding_standard": 25.4551,
+          "reference_value": 5.59
+        },
+        "H_Cl_sp3": {
+          "shielding_standard": 28.28539355925,
+          "reference_value": 3.52
+        }
+      }
     }
   }
 }

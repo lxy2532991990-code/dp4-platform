@@ -56,6 +56,7 @@ class ExperimentalAssignment:
     nucleus: str
     exp_shift_ppm: float
     label: str = ""
+    exchange_group: str = ""
 
 
 @dataclass
@@ -66,6 +67,10 @@ class ShiftRow:
     predicted_shift_ppm: float
     error_ppm: float
     label: str = ""
+    unscaled_shift_ppm: float | None = None
+    exchange_group: str = ""
+    swapped_with: int | None = None
+    halogen_neighbor: str = ""
 
 
 @dataclass
@@ -164,6 +169,7 @@ class CandidateIsomer:
     averaged_shieldings: dict[str, dict[int, float]] = field(default_factory=dict)
     tms_referenced_shifts: dict[str, dict[int, float]] = field(default_factory=dict)
     atom_hybridizations: dict[int, str] = field(default_factory=dict)
+    halogen_neighbor: dict[int, str] = field(default_factory=dict)
     unpaired_opt: list[OrcaFileInfo] = field(default_factory=list)
     unpaired_nmr: list[OrcaFileInfo] = field(default_factory=list)
     pairing_overrides: dict[str, str] = field(default_factory=dict)
