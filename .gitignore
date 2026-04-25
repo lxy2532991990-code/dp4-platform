@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 tests/_tmp/
 dp4_results/
+DP4plus-App/
 tests_runtime/
 .venv/
 .uv-cache/
