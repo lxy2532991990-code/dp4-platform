@@ -5,7 +5,12 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from dp4_platform.dp4 import load_parameter_table, resolve_level_match, validate_parameter_table
+from dp4_platform.dp4 import (
+    _compute_log_likelihood,
+    load_parameter_table,
+    resolve_level_match,
+    validate_parameter_table,
+)
 from tools.merge_extended_dp4_parameters import merge_parameter_file
 
 
@@ -30,6 +35,19 @@ class ParameterProvenanceTests(unittest.TestCase):
                 self.assertIn(params.get("scaling_input"), {"unscaled_shift", "shielding"})
         self.assertEqual(families["DP4+"], 24)
         self.assertEqual(families["MM-DP4+"], 36)
+
+    def test_legacy_t_parameter_table_is_rejected_when_loaded(self) -> None:
+        legacy_path = Path(__file__).resolve().parents[1] / "dp4_platform" / "data" / "default_parameter_table.json"
+
+        with self.assertRaisesRegex(ValueError, "student_t_tail"):
+            load_parameter_table(str(legacy_path))
+
+    def test_runtime_rejects_student_t_log_pdf_distribution(self) -> None:
+        with self.assertRaisesRegex(ValueError, "legacy/non-DP4\\+ scoring"):
+            _compute_log_likelihood(
+                [0.1],
+                {"distribution": "t", "mu": 0.0, "sigma": 1.0, "nu": 5.0},
+            )
 
     def test_level_alias_matching_covers_common_notations(self) -> None:
         cases = {

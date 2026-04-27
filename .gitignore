@@ -12,3 +12,4 @@ tests_runtime/
 *.swp
 *.tmp
 .DS_Store
+.external/

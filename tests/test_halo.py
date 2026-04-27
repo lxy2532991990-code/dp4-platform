@@ -187,7 +187,7 @@ class ValidateParameterTableTests(unittest.TestCase):
             "scaling_input": "unscaled_shift",
             "intercept": 0.0,
             "slope": 1.0,
-            "scaled_error": {"distribution": "normal", "mean": 0.0, "stddev": 1.0},
+            "scaled_error": {"distribution": "student_t_tail", "mu": 0.0, "sigma": 1.0, "nu": 5.0},
         }
         if mstd_block is not None:
             nucleus["mstd_reference"] = mstd_block
@@ -204,7 +204,7 @@ class ValidateParameterTableTests(unittest.TestCase):
         }
 
     def test_table_without_mstd_validates(self) -> None:
-        # Backwards-compatible: pre-existing tables keep validating.
+        # MSTD is optional for otherwise valid DP4+App-style tables.
         validate_parameter_table(self._base_table(None))
 
     def test_well_formed_mstd_validates(self) -> None:

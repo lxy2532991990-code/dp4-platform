@@ -32,17 +32,64 @@ from .models import (
 # parameter table helpers
 # ---------------------------------------------------------------------------
 
+DP4_TAIL_DISTRIBUTIONS = {"student_t_tail", "t_tail"}
+
+
 def load_parameter_table(path: str | None) -> dict:
     if path:
         with open(path, "r", encoding="utf-8") as fh:
             return validate_parameter_table(json.load(fh))
     data_root = resources.files("dp4_platform.data")
-    for filename in ("dp4plus_parameter_table.json", "default_parameter_table.json"):
-        resource = data_root.joinpath(filename)
-        if resource.is_file():
-            with resource.open("r", encoding="utf-8") as fh:
-                return validate_parameter_table(json.load(fh))
-    raise FileNotFoundError("No DP4 parameter table is bundled with dp4_platform.data")
+    resource = data_root.joinpath("dp4plus_parameter_table.json")
+    if resource.is_file():
+        with resource.open("r", encoding="utf-8") as fh:
+            return validate_parameter_table(json.load(fh))
+    raise FileNotFoundError("Bundled DP4+App parameter table is missing")
+
+
+def _iter_table_nuclei(parameter_table: dict):
+    levels = parameter_table.get("levels")
+    if isinstance(levels, dict) and levels:
+        for level_name, level_data in levels.items():
+            nuclei = level_data.get("nuclei", {})
+            if isinstance(nuclei, dict):
+                yield str(level_name), nuclei
+        return
+    nuclei = parameter_table.get("nuclei", {})
+    if isinstance(nuclei, dict):
+        yield "parameter table", nuclei
+
+
+def _require_tail_distribution(entry: dict, context: str) -> None:
+    if not isinstance(entry, dict):
+        raise ValueError(f"{context} must be a mapping")
+    distribution = entry.get("distribution")
+    if distribution not in DP4_TAIL_DISTRIBUTIONS:
+        detail = "missing distribution" if distribution is None else f"distribution '{distribution}'"
+        raise ValueError(f"{context} uses {detail}; DP4+ requires student_t_tail")
+
+
+def _validate_dp4_error_distributions(parameter_table: dict) -> None:
+    for level_name, nuclei in _iter_table_nuclei(parameter_table):
+        for nucleus, params in nuclei.items():
+            if not isinstance(params, dict):
+                continue
+            context = f"Level '{level_name}' nucleus {nucleus}"
+            if "scaled_error" in params:
+                _require_tail_distribution(params["scaled_error"], f"{context} scaled_error")
+            elif "error_model" in params:
+                raise ValueError(f"{context} uses legacy error_model; DP4+ requires scaled_error with student_t_tail")
+
+            for key, entry in params.get("unscaled_error", {}).items():
+                _require_tail_distribution(entry, f"{context} unscaled_error['{key}']")
+
+            raw = params.get("raw_shielding_error")
+            if isinstance(raw, dict):
+                if any(key in raw for key in ("distribution", "mu", "mean", "sigma", "stddev")):
+                    _require_tail_distribution(raw, f"{context} raw_shielding_error")
+                else:
+                    for key, entry in raw.items():
+                        _require_tail_distribution(entry, f"{context} raw_shielding_error['{key}']")
 
 
 def validate_parameter_table(parameter_table: dict) -> dict:
@@ -50,6 +97,7 @@ def validate_parameter_table(parameter_table: dict) -> dict:
     if parameter_table.get("schema_version") != 2:
         if "nuclei" not in parameter_table and "levels" not in parameter_table:
             raise ValueError("Parameter table must define either 'nuclei' or 'levels'")
+        _validate_dp4_error_distributions(parameter_table)
         return parameter_table
 
     if not parameter_table.get("sources"):
@@ -83,6 +131,7 @@ def validate_parameter_table(parameter_table: dict) -> dict:
                                 f"Level '{level_name}' nucleus {nucleus} mstd_reference['{key}'] "
                                 f"missing numeric '{field_name}'"
                             )
+    _validate_dp4_error_distributions(parameter_table)
     return parameter_table
 
 
@@ -451,10 +500,13 @@ def _get_scaling_input(params: dict) -> str:
 def _compute_log_likelihood(errors: list[float], em: dict) -> float:
     total = 0.0
     for error in errors:
-        if em["distribution"] in {"student_t_tail", "t_tail"}:
+        if em["distribution"] in DP4_TAIL_DISTRIBUTIONS:
             total += _student_t_tail_log_probability(error, em["mu"], em["sigma"], em["nu"])
         elif em["distribution"] == "t":
-            total += _t_log_pdf(error, em["mu"], em["sigma"], em["nu"])
+            raise ValueError(
+                "Student-t log PDF is legacy/non-DP4+ scoring. "
+                "Use distribution='student_t_tail'."
+            )
         else:
             total += _normal_log_pdf(error, em["mu"], em["sigma"])
     return total
