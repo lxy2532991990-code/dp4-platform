@@ -170,6 +170,7 @@ try:
         QSizePolicy,
         QSplitter,
         QStackedWidget,
+        QStatusBar,
         QTabWidget,
         QTableWidget,
         QTableWidgetItem,
@@ -1480,6 +1481,8 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.ecd_page)
         layout.addWidget(self.stack)
 
+        self._build_status_bar()
+
     def _build_home_page(self) -> QWidget:
         page = QWidget()
         page.setObjectName("HomePage")
@@ -1591,9 +1594,12 @@ class MainWindow(QMainWindow):
         toolbar.addStretch(1)
         layout.addLayout(toolbar)
 
-        experimental_box = QGroupBox("Experimental")
-        experimental_box.setMinimumHeight(132)
-        experimental_layout = QGridLayout(experimental_box)
+        experimental_card, experimental_outer = self._make_section_card(
+            "EXPERIMENTAL", "#4A7BF7"
+        )
+        experimental_grid_widget = QWidget()
+        experimental_layout = QGridLayout(experimental_grid_widget)
+        experimental_layout.setContentsMargins(0, 0, 0, 0)
         experimental_layout.setColumnStretch(1, 1)
         experimental_layout.setRowMinimumHeight(0, 38)
         experimental_layout.setRowMinimumHeight(1, 28)
@@ -1612,17 +1618,32 @@ class MainWindow(QMainWindow):
         experimental_layout.addWidget(browse_exp, 0, 2)
         experimental_layout.addWidget(auto_assign_btn, 0, 3)
         experimental_layout.addWidget(self.exp_summary, 1, 0, 1, 4)
-        layout.addWidget(experimental_box)
+        experimental_outer.addWidget(experimental_grid_widget)
+        layout.addWidget(experimental_card)
 
-        candidates_box = QGroupBox("Candidates")
-        candidates_box.setFixedHeight(292)
-        candidates_layout = QVBoxLayout(candidates_box)
+        candidates_card, candidates_outer = self._make_section_card(
+            "CANDIDATES", "#0EA5E9", alt_tone=True
+        )
+        candidates_body = QWidget()
+        candidates_layout = QVBoxLayout(candidates_body)
+        candidates_layout.setContentsMargins(0, 0, 0, 0)
         self.scroll_area = QScrollArea()
+        self.scroll_area.setObjectName("CandidateScrollArea")
         self.scroll_area.setFixedHeight(244)
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scroll_area.setWidgetResizable(False)
+        self.scroll_area.viewport().setObjectName("CandidateScrollViewport")
+        self.scroll_area.viewport().setStyleSheet(
+            "QWidget#CandidateScrollViewport { background-color: #E8F0FF; }"
+        )
         self.scroll_content = QWidget()
+        self.scroll_content.setObjectName("CandidateScrollContent")
+        self.scroll_content.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.scroll_content.setStyleSheet(
+            "QWidget#CandidateScrollContent { background-color: #E8F0FF; }"
+        )
         self.scroll_content.setFixedHeight(232)
         self.scroll_layout = QHBoxLayout(self.scroll_content)
         self.scroll_layout.setContentsMargins(12, 12, 12, 12)
@@ -1638,12 +1659,16 @@ class MainWindow(QMainWindow):
         candidates_row.addWidget(self.scroll_area, 1)
         candidates_row.addWidget(self.add_button, 0, Qt.AlignmentFlag.AlignVCenter)
         candidates_layout.addLayout(candidates_row)
-        layout.addWidget(candidates_box)
+        candidates_outer.addWidget(candidates_body)
+        layout.addWidget(candidates_card)
         self._refresh_candidate_scroll_content_size()
 
-        parameters_box = QGroupBox("Parameters")
-        parameters_box.setMinimumHeight(178)
-        parameters_layout = QGridLayout(parameters_box)
+        parameters_card, parameters_outer = self._make_section_card(
+            "PARAMETERS", "#F59E0B"
+        )
+        parameters_body = QWidget()
+        parameters_layout = QGridLayout(parameters_body)
+        parameters_layout.setContentsMargins(0, 0, 0, 0)
         parameters_layout.setHorizontalSpacing(12)
         parameters_layout.setVerticalSpacing(10)
         parameters_layout.setColumnStretch(1, 1)
@@ -1668,6 +1693,7 @@ class MainWindow(QMainWindow):
         self.cmb_weighting.setMinimumHeight(34)
         for strategy in WeightingStrategy:
             self.cmb_weighting.addItem(strategy.value, strategy)
+        self.cmb_weighting.currentIndexChanged.connect(self._refresh_status_bar)
 
         self.cmb_program_mode = QComboBox()
         self.cmb_program_mode.setMinimumHeight(34)
@@ -1681,9 +1707,11 @@ class MainWindow(QMainWindow):
         self.spin_temp.setDecimals(2)
         self.spin_temp.setRange(1.0, 5000.0)
         self.spin_temp.setValue(298.15)
+        self.spin_temp.valueChanged.connect(self._refresh_status_bar)
 
         self.ed_output = QLineEdit(os.path.abspath("dp4_results"))
         self.ed_output.setMinimumHeight(34)
+        self.ed_output.textChanged.connect(self._refresh_status_bar)
         browse_output = QPushButton("Browse")
         browse_output.setMinimumHeight(34)
         browse_output.clicked.connect(self._choose_output_dir)
@@ -1732,10 +1760,14 @@ class MainWindow(QMainWindow):
         tms_file_widget.setLayout(tms_file_row)
         parameters_layout.addWidget(tms_file_widget, 3, 0, 1, 6)
 
-        layout.addWidget(parameters_box)
+        parameters_outer.addWidget(parameters_body)
+        layout.addWidget(parameters_card)
 
         run_row = QHBoxLayout()
         self.btn_run = QPushButton("Run")
+        self.btn_run.setObjectName("PrimaryButton")
+        self.btn_run.setMinimumHeight(38)
+        self.btn_run.setMinimumWidth(120)
         self.btn_run.clicked.connect(self.run_pipeline)
         self.run_hint_label = QLabel("")
         self.run_hint_label.setWordWrap(True)
@@ -1815,12 +1847,19 @@ class MainWindow(QMainWindow):
 
     def _show_home_page(self) -> None:
         self.stack.setCurrentWidget(self.home_page)
+        if hasattr(self, "status_bar"):
+            self.status_bar.setVisible(False)
 
     def _show_dp4_page(self) -> None:
         self.stack.setCurrentWidget(self.dp4_page)
+        if hasattr(self, "status_bar"):
+            self._refresh_status_bar()
+            self.status_bar.setVisible(True)
 
     def _show_ecd_page(self) -> None:
         self.stack.setCurrentWidget(self.ecd_page)
+        if hasattr(self, "status_bar"):
+            self.status_bar.setVisible(False)
 
     def resizeEvent(self, event) -> None:  # type: ignore[override]
         super().resizeEvent(event)
@@ -1998,6 +2037,46 @@ class MainWindow(QMainWindow):
             QPushButton#BackButton {
                 padding: 7px 16px;
             }
+            QPushButton#PrimaryButton {
+                background: #4A7BF7;
+                color: #ffffff;
+                border: 1px solid #3B6CE6;
+                border-radius: 8px;
+                padding: 9px 22px;
+                font-weight: 600;
+                font-size: 13px;
+            }
+            QPushButton#PrimaryButton:hover {
+                background: #3B6CE6;
+                border-color: #3B6CE6;
+            }
+            QPushButton#PrimaryButton:pressed {
+                background: #2F5ACF;
+                border-color: #2F5ACF;
+            }
+            QPushButton#PrimaryButton:disabled {
+                background: #c4cad6;
+                border-color: #c4cad6;
+                color: #f0f1f4;
+            }
+            QStatusBar#StatusBar {
+                background: #ffffff;
+                border-top: 1px solid #E2E5EB;
+                color: #6B7280;
+            }
+            QStatusBar#StatusBar::item {
+                border: 0;
+            }
+            QStatusBar#StatusBar QLabel {
+                color: #6B7280;
+                font-size: 11px;
+                padding: 0 2px;
+            }
+            QLabel#StatusSeparator {
+                color: #CBD5E1;
+                font-size: 11px;
+                padding: 0 6px;
+            }
             QScrollArea {
                 background: transparent;
                 border: 0;
@@ -2015,6 +2094,111 @@ class MainWindow(QMainWindow):
             }
             """
         )
+
+    def _make_section_card(
+        self,
+        title: str,
+        accent: str,
+        alt_tone: bool = False,
+    ) -> tuple[QFrame, QVBoxLayout]:
+        if alt_tone:
+            bg, border = "#E8F0FF", "#CBDCF8"
+        else:
+            bg, border = "#FFFFFF", "#E2E8F0"
+
+        card = QFrame()
+        card.setObjectName("SectionCard")
+        card.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        card.setStyleSheet(
+            f"QFrame#SectionCard {{ background: {bg}; border: 1px solid {border};"
+            f" border-radius: 8px; }}"
+            f"QFrame#SectionCard QLabel#SectionHdr {{ background: transparent;"
+            f" color: #475569; font-size: 10px; font-weight: 700;"
+            f" letter-spacing: 1px; padding: 0 0 2px 0; }}"
+        )
+        card.setFrameShape(QFrame.Shape.NoFrame)
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+
+        outer = QVBoxLayout(card)
+        outer.setContentsMargins(12, 10, 12, 12)
+        outer.setSpacing(7)
+
+        title_row = QHBoxLayout()
+        title_row.setContentsMargins(0, 0, 0, 0)
+        title_row.setSpacing(7)
+
+        bar = QFrame()
+        bar.setObjectName("SectionAccent")
+        bar.setFixedSize(3, 14)
+        bar.setStyleSheet(f"background: {accent}; border-radius: 1px; border: 0;")
+        title_row.addWidget(bar, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        lbl = QLabel(title)
+        lbl.setObjectName("SectionHdr")
+        title_row.addWidget(lbl)
+        title_row.addStretch(1)
+        outer.addLayout(title_row)
+
+        return card, outer
+
+    def _build_status_bar(self) -> None:
+        self.status_bar = QStatusBar(self)
+        self.status_bar.setObjectName("StatusBar")
+        self.status_bar.setSizeGripEnabled(False)
+        self.setStatusBar(self.status_bar)
+
+        self.status_candidates = QLabel()
+        self.status_nuclei = QLabel()
+        self.status_weighting = QLabel()
+        self.status_temperature = QLabel()
+        self.status_program = QLabel()
+        self.status_output = QLabel()
+
+        left_widgets = [
+            self.status_candidates,
+            self.status_nuclei,
+            self.status_weighting,
+            self.status_temperature,
+            self.status_program,
+        ]
+        for index, widget in enumerate(left_widgets):
+            if index > 0:
+                sep = QLabel("|")
+                sep.setObjectName("StatusSeparator")
+                self.status_bar.addWidget(sep)
+            self.status_bar.addWidget(widget)
+
+        self.status_bar.addPermanentWidget(self.status_output)
+
+        self._refresh_status_bar()
+        self.status_bar.setVisible(False)
+
+    def _refresh_status_bar(self) -> None:
+        if not hasattr(self, "status_bar"):
+            return
+
+        count = len(getattr(self, "cards", []))
+        self.status_candidates.setText(
+            f"{count} candidate" + ("s" if count != 1 else "")
+        )
+
+        nuclei = self._active_nuclei()
+        self.status_nuclei.setText(" + ".join(nuclei) if nuclei else "no nuclei")
+
+        weighting_text = self.cmb_weighting.currentText() or "-"
+        self.status_weighting.setText(f"weighting: {weighting_text}")
+
+        self.status_temperature.setText(f"{self.spin_temp.value():.2f} K")
+
+        program_text = self.cmb_program_mode.currentText() or "Auto"
+        self.status_program.setText(f"program: {program_text}")
+
+        output_path = self.ed_output.text().strip()
+        if output_path:
+            output_display = os.path.basename(output_path.rstrip("/\\")) or output_path
+        else:
+            output_display = "(unset)"
+        self.status_output.setText(f"output: {output_display}")
 
     def _build_menu(self) -> None:
         menu_bar = QMenuBar(self)
@@ -2401,6 +2585,7 @@ class MainWindow(QMainWindow):
         else:
             self.run_hint_label.setText(reason)
             self.run_hint_label.setVisible(True)
+        self._refresh_status_bar()
 
     def _validate_candidate_cards(self) -> bool:
         names = [card.state.name.strip() for card in self.cards]

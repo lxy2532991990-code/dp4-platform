@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QSlider, QComboBox, QPushButton,
     QFileDialog, QScrollArea, QFrame, QProgressBar,
-    QDoubleSpinBox, QSpinBox, QSizePolicy, QToolBar,
+    QAbstractSpinBox, QDoubleSpinBox, QSpinBox, QSizePolicy, QToolBar,
     QScrollBar, QCheckBox, QTableWidget, QTableWidgetItem,
     QHeaderView, QDialog, QDialogButtonBox, QMessageBox,
     QAbstractItemView, QGroupBox, QSplitter, QTextEdit
@@ -66,20 +66,25 @@ QMainWindow {
     background-color: #F5F6FA;
 }
 
+QWidget#ecd_toolbar_shell {
+    background-color: #F5F6FA;
+}
+
 QToolBar {
     background-color: #FFFFFF;
-    border-bottom: 1px solid #E2E5EB;
-    spacing: 6px;
-    padding: 4px 12px;
+    border: 1px solid #E2E5EB;
+    border-radius: 8px;
+    spacing: 8px;
+    padding: 8px 12px;
 }
 QToolBar QPushButton {
     border: 1px solid #D0D5DD;
-    border-radius: 4px;
-    padding: 6px 16px;
+    border-radius: 8px;
+    padding: 7px 16px;
     font-size: 12px;
     color: #344054;
     background-color: #FFFFFF;
-    min-height: 28px;
+    min-height: 32px;
 }
 QToolBar QPushButton:hover {
     background-color: #F0F4FF;
@@ -94,6 +99,20 @@ QToolBar QPushButton#btn_load {
 QToolBar QPushButton#btn_load:hover {
     background-color: #3B6CE6;
 }
+QToolBar QPushButton#btn_editor {
+    background-color: #8B5CF6;
+    color: #FFFFFF;
+    border: 1px solid #7C3AED;
+}
+QToolBar QPushButton#btn_editor:hover {
+    background-color: #7C3AED;
+    border-color: #6D28D9;
+}
+QToolBar QPushButton#btn_editor:disabled {
+    background-color: #DDD6FE;
+    color: #F5F3FF;
+    border-color: #C4B5FD;
+}
 QToolBar QPushButton#btn_export {
     background-color: #ECFDF5;
     color: #059669;
@@ -104,11 +123,11 @@ QToolBar QPushButton#btn_export:hover {
 }
 
 QScrollArea#sidebar_scroll {
-    background-color: #F3F4F6;
-    border-right: 1px solid #E2E5EB;
+    background-color: #F5F6FA;
+    border: none;
 }
 QWidget#sidebar_inner {
-    background-color: #F3F4F6;
+    background-color: #F5F6FA;
 }
 
 QFrame#section_card[altTone="0"] {
@@ -163,7 +182,7 @@ QLabel#hint_label {
 QLineEdit, QDoubleSpinBox, QSpinBox {
     background-color: #F9FAFB;
     border: 1px solid #D1D5DB;
-    border-radius: 4px;
+    border-radius: 8px;
     color: #1F2937;
     padding: 3px 8px;
     font-size: 12px;
@@ -176,7 +195,7 @@ QLineEdit:focus, QDoubleSpinBox:focus, QSpinBox:focus {
 QComboBox {
     background-color: #F9FAFB;
     border: 1px solid #D1D5DB;
-    border-radius: 4px;
+    border-radius: 8px;
     color: #1F2937;
     padding: 3px 8px;
     font-size: 12px;
@@ -241,7 +260,7 @@ QPushButton#btn_browse {
     background-color: #F3F4F6;
     color: #6B7280;
     border: 1px solid #D1D5DB;
-    border-radius: 4px;
+    border-radius: 8px;
     min-width: 28px;
     max-width: 28px;
     min-height: 24px;
@@ -250,6 +269,35 @@ QPushButton#btn_browse {
 }
 QPushButton#btn_browse:hover {
     background-color: #E5E7EB;
+}
+
+QWidget#external_spin {
+    background-color: transparent;
+}
+QPushButton#spin_step_button {
+    background-color: #FFFFFF;
+    color: #475569;
+    border: 1px solid #D1D5DB;
+    border-radius: 6px;
+    padding: 0;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 24px;
+    max-width: 24px;
+    min-height: 15px;
+    max-height: 15px;
+}
+QPushButton#spin_step_button:hover {
+    background-color: #F0F4FF;
+    border-color: #4A7BF7;
+}
+QPushButton#spin_step_button:pressed {
+    background-color: #E8F0FF;
+}
+QPushButton#spin_step_button:disabled {
+    background-color: #F3F4F6;
+    color: #CBD5E1;
+    border-color: #E2E8F0;
 }
 
 QProgressBar {
@@ -300,11 +348,18 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 
 QWidget#plot_toolbar {
     background-color: #FFFFFF;
-    border-bottom: 1px solid #E2E5EB;
+    border: 1px solid #E2E5EB;
+    border-radius: 8px;
+}
+
+QFrame#plot_card {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E5EB;
+    border-radius: 8px;
 }
 
 QWidget#plot_host {
-    background-color: #F5F6FA;
+    background-color: #FFFFFF;
 }
 
 /* 构象编辑器表格样式 */
@@ -1349,9 +1404,17 @@ class ECDPage(QWidget):
         page_layout.setContentsMargins(0, 0, 0, 0)
         page_layout.setSpacing(0)
 
+        toolbar_shell = QWidget()
+        toolbar_shell.setObjectName("ecd_toolbar_shell")
+        toolbar_layout = QVBoxLayout(toolbar_shell)
+        toolbar_layout.setContentsMargins(12, 10, 12, 10)
+        toolbar_layout.setSpacing(0)
+
         tb = QToolBar("Main")
         tb.setMovable(False)
-        page_layout.addWidget(tb)
+        tb.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        toolbar_layout.addWidget(tb)
+        page_layout.addWidget(toolbar_shell)
 
         self.btn_load = QPushButton("  Load Data  ")
         self.btn_load.setObjectName("btn_load")
@@ -1365,7 +1428,6 @@ class ECDPage(QWidget):
         # 添加构象编辑器按钮
         self.btn_editor = QPushButton("  Conformer Editor  ")
         self.btn_editor.setObjectName("btn_editor")
-        self.btn_editor.setStyleSheet("background-color: #8B5CF6; color: white;")
         self.btn_editor.clicked.connect(self._open_conformer_editor)
         self.btn_editor.setEnabled(False)  # 初始禁用，加载数据后启用
         tb.addWidget(self.btn_editor)
@@ -1427,16 +1489,25 @@ class ECDPage(QWidget):
             aspect_w=PLOT_FIGSIZE[0],
             aspect_h=PLOT_FIGSIZE[1]
         )
+        plot_card = QFrame()
+        plot_card.setObjectName("plot_card")
+        plot_card.setFrameShape(QFrame.Shape.NoFrame)
+        plot_card.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        plot_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        plot_card_layout = QVBoxLayout(plot_card)
+        plot_card_layout.setContentsMargins(12, 12, 12, 12)
+        plot_card_layout.setSpacing(0)
+        plot_card_layout.addWidget(self.plot_host)
 
         nav = NavigationToolbar2QT(self.canvas, self)
         nav.setObjectName("plot_toolbar")
         nav.setStyleSheet(
             "QWidget#plot_toolbar { background: #FFFFFF; border: 1px solid #E2E5EB; "
-            "border-radius: 4px; padding: 2px; }"
+            "border-radius: 8px; padding: 2px; }"
         )
 
         rl.addWidget(nav)
-        rl.addWidget(self.plot_host, 1)
+        rl.addWidget(plot_card, 1)
 
         self.progress = QProgressBar()
         self.progress.setTextVisible(False)
@@ -1488,15 +1559,17 @@ class ECDPage(QWidget):
         self.sp_wl_lo.setRange(100, 800)
         self.sp_wl_lo.setValue(200)
         self.sp_wl_lo.setDecimals(0)
+        self.sp_wl_lo.setSingleStep(1)
 
         self.sp_wl_hi = NoWheelDoubleSpinBox()
         self.sp_wl_hi.setRange(100, 800)
         self.sp_wl_hi.setValue(400)
         self.sp_wl_hi.setDecimals(0)
+        self.sp_wl_hi.setSingleStep(1)
 
-        r.addWidget(self.sp_wl_lo)
+        r.addWidget(self._external_stepper(self.sp_wl_lo, 68))
         r.addWidget(QLabel("-"))
-        r.addWidget(self.sp_wl_hi)
+        r.addWidget(self._external_stepper(self.sp_wl_hi, 68))
         r.addStretch()
         L.addLayout(r)
 
@@ -1516,8 +1589,9 @@ class ECDPage(QWidget):
         self.sp_temp.setRange(100, 500)
         self.sp_temp.setValue(298.15)
         self.sp_temp.setDecimals(2)
+        self.sp_temp.setSingleStep(1.0)
 
-        r2.addWidget(self.sp_temp)
+        r2.addWidget(self._external_stepper(self.sp_temp, 78))
         r2.addStretch()
         L.addLayout(r2)
 
@@ -1540,7 +1614,7 @@ class ECDPage(QWidget):
         self.sp_sgw.setRange(3, 101)
         self.sp_sgw.setValue(15)
         self.sp_sgw.setSingleStep(2)
-        r3.addWidget(self.sp_sgw)
+        r3.addWidget(self._external_stepper(self.sp_sgw, 56))
 
         fl4 = QLabel("order")
         fl4.setObjectName("field_label")
@@ -1549,7 +1623,7 @@ class ECDPage(QWidget):
         self.sp_sgo = NoWheelSpinBox()
         self.sp_sgo.setRange(1, 10)
         self.sp_sgo.setValue(3)
-        r3.addWidget(self.sp_sgo)
+        r3.addWidget(self._external_stepper(self.sp_sgo, 48))
 
         r3.addStretch()
         L.addLayout(r3)
@@ -1557,34 +1631,45 @@ class ECDPage(QWidget):
         L = self._section_card("COMPARISON", "#EF4444")
         self.cb_metric = self._combo(L, "Similarity", ["cosine", "pearson", "tanimoto"], 0)
 
-        r4 = QHBoxLayout()
-        r4.setSpacing(4)
-
         fl5 = QLabel("Shift scan (eV)")
         fl5.setObjectName("field_label")
-        r4.addWidget(fl5)
+        L.addWidget(fl5)
 
         self.sp_scn_lo = NoWheelDoubleSpinBox()
         self.sp_scn_lo.setRange(-2, 0)
         self.sp_scn_lo.setValue(-0.5)
         self.sp_scn_lo.setDecimals(2)
+        self.sp_scn_lo.setSingleStep(0.01)
 
         self.sp_scn_hi = NoWheelDoubleSpinBox()
         self.sp_scn_hi.setRange(0, 2)
         self.sp_scn_hi.setValue(0.5)
         self.sp_scn_hi.setDecimals(2)
+        self.sp_scn_hi.setSingleStep(0.01)
 
         self.sp_scn_st = NoWheelDoubleSpinBox()
         self.sp_scn_st.setRange(0.005, 0.2)
         self.sp_scn_st.setValue(0.02)
         self.sp_scn_st.setDecimals(3)
+        self.sp_scn_st.setSingleStep(0.005)
 
-        r4.addWidget(self.sp_scn_lo)
+        r4 = QHBoxLayout()
+        r4.setSpacing(6)
+        r4.addWidget(self._external_stepper(self.sp_scn_lo, 72))
         r4.addWidget(QLabel("to"))
-        r4.addWidget(self.sp_scn_hi)
-        r4.addWidget(QLabel("step"))
-        r4.addWidget(self.sp_scn_st)
+        r4.addWidget(self._external_stepper(self.sp_scn_hi, 72))
+        r4.addStretch()
         L.addLayout(r4)
+
+        step_label = QLabel("step")
+        step_label.setObjectName("field_label")
+        L.addWidget(step_label)
+
+        r4_step = QHBoxLayout()
+        r4_step.setSpacing(6)
+        r4_step.addWidget(self._external_stepper(self.sp_scn_st, 78))
+        r4_step.addStretch()
+        L.addLayout(r4_step)
 
         L = self._section_card("PLOT LEGENDS", "#8B5CF6")
         hint = QLabel("Standalone uppercase R / S will be auto-italicized in legends.")
@@ -1753,6 +1838,44 @@ class ECDPage(QWidget):
         cb.setCurrentIndex(idx)
         L.addWidget(cb)
         return cb
+
+    def _external_stepper(self, spin: QAbstractSpinBox, display_width: int) -> QWidget:
+        spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        spin.setFixedWidth(display_width)
+        spin.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+
+        wrapper = QWidget()
+        wrapper.setObjectName("external_spin")
+        wrapper.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        row = QHBoxLayout(wrapper)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(4)
+        row.addWidget(spin)
+
+        buttons = QWidget()
+        buttons_layout = QVBoxLayout(buttons)
+        buttons_layout.setContentsMargins(0, 0, 0, 0)
+        buttons_layout.setSpacing(2)
+
+        up_button = QPushButton("+")
+        down_button = QPushButton("-")
+        for button in (up_button, down_button):
+            button.setObjectName("spin_step_button")
+            button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            buttons_layout.addWidget(button)
+
+        up_button.clicked.connect(spin.stepUp)
+        down_button.clicked.connect(spin.stepDown)
+
+        def refresh_buttons(*_ignored) -> None:
+            up_button.setEnabled(spin.value() < spin.maximum())
+            down_button.setEnabled(spin.value() > spin.minimum())
+
+        spin.valueChanged.connect(refresh_buttons)
+        refresh_buttons()
+
+        row.addWidget(buttons)
+        return wrapper
 
     def _bdir(self, le):
         try:
