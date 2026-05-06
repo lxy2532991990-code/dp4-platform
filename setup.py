@@ -7,7 +7,10 @@ setup(
     description="Standalone ORCA/Gaussian DP4-style workflow platform",
     packages=find_packages(),
     include_package_data=True,
-    package_data={"dp4_platform": ["data/*.json"]},
+    package_data={
+        "dp4_platform": ["data/*.json", "assets/*.svg"],
+        "ecd_platform": ["assets/*.svg"],
+    },
     install_requires=[
         "numpy>=1.20",
         "matplotlib>=3.5",

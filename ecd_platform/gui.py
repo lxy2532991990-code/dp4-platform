@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
     QAbstractItemView, QGroupBox, QSplitter, QTextEdit
 )
 from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QPalette, QAction, QFont
+from PyQt6.QtGui import QColor, QPalette, QAction, QFont, QLinearGradient, QPainter, QPainterPath, QRegion
 
 import matplotlib
 matplotlib.use("QtAgg")
@@ -57,6 +57,10 @@ PLOT_FIGSIZE = (10, 6)
 PLOT_DPI_PREVIEW = 100
 PLOT_DPI_EXPORT = 300
 PLOT_BG = "#FFFFFF"
+
+
+def _style_asset_url(filename):
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", filename)).replace("\\", "/")
 
 
 STYLESHEET = """
@@ -125,6 +129,12 @@ QToolBar QPushButton#btn_export:hover {
 QScrollArea#sidebar_scroll {
     background-color: #F5F6FA;
     border: none;
+    border-radius: 8px;
+}
+QWidget#sidebar_scroll_viewport {
+    background-color: #F5F6FA;
+    border: none;
+    border-radius: 8px;
 }
 QWidget#sidebar_inner {
     background-color: #F5F6FA;
@@ -195,30 +205,59 @@ QLineEdit:focus, QDoubleSpinBox:focus, QSpinBox:focus {
 QComboBox {
     background-color: #F9FAFB;
     border: 1px solid #D1D5DB;
-    border-radius: 8px;
+    border-radius: 20px;
     color: #1F2937;
-    padding: 3px 8px;
+    padding: 7px 40px 7px 16px;
     font-size: 12px;
-    min-height: 24px;
+    min-height: 26px;
+    selection-background-color: #E8F0FE;
+    selection-color: #111827;
 }
-QComboBox:focus { border-color: #4A7BF7; }
+QComboBox:hover {
+    border-color: #B8C0CC;
+    background-color: #FFFFFF;
+}
+QComboBox:focus, QComboBox:on {
+    border-color: #4A7BF7;
+    background-color: #FFFFFF;
+}
 QComboBox::drop-down {
     border: none;
-    width: 20px;
+    width: 38px;
 }
 QComboBox::down-arrow {
-    image: none;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid #6B7280;
-    margin-right: 6px;
+    image: url("__COMBO_ARROW_DOWN__");
+    width: 18px;
+    height: 18px;
+    margin-right: 14px;
 }
-QComboBox QAbstractItemView {
+QComboBox::down-arrow:on {
+    image: url("__COMBO_ARROW_UP__");
+}
+QComboBox QAbstractItemView, QComboBox QListView {
     background-color: #FFFFFF;
-    border: 1px solid #D1D5DB;
+    border: 12px solid #FFFFFF;
+    border-radius: 28px;
+    padding: 2px;
     color: #1F2937;
-    selection-background-color: #EFF6FF;
-    selection-color: #1D4ED8;
+    outline: 0;
+    selection-background-color: #E8F0FE;
+    selection-color: #111827;
+}
+QComboBox QAbstractItemView::item, QComboBox QListView::item {
+    min-height: 44px;
+    padding: 8px 22px;
+    border-radius: 20px;
+    margin: 4px;
+}
+QComboBox QAbstractItemView::item:hover, QComboBox QListView::item:hover {
+    background-color: #F4F7FF;
+    color: #111827;
+}
+QComboBox QAbstractItemView::item:selected, QComboBox QListView::item:selected {
+    background-color: #E8F0FE;
+    color: #111827;
+    font-weight: 600;
 }
 
 QCheckBox {
@@ -320,16 +359,17 @@ QStatusBar {
 }
 
 QScrollBar:vertical {
-    background: #F0F0F0;
+    background: transparent;
     width: 14px;
     border: none;
-    padding: 0;
+    border-radius: 7px;
+    padding: 2px 0;
 }
 QScrollBar::handle:vertical {
     background: #C4C4C4;
     border-radius: 5px;
     min-height: 40px;
-    margin: 3px;
+    margin: 0 3px;
 }
 QScrollBar::handle:vertical:hover {
     background: #9CA3AF;
@@ -343,7 +383,7 @@ QScrollBar::sub-line:vertical {
     subcontrol-position: top;
 }
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-    background: #F0F0F0;
+    background: transparent;
 }
 
 QWidget#plot_toolbar {
@@ -387,6 +427,8 @@ QHeaderView::section {
     border-bottom: 1px solid #E2E8F0;
 }
 """
+STYLESHEET = STYLESHEET.replace("__COMBO_ARROW_DOWN__", _style_asset_url("chevron-down.svg"))
+STYLESHEET = STYLESHEET.replace("__COMBO_ARROW_UP__", _style_asset_url("chevron-up.svg"))
 
 
 def nm_to_ev(x):
@@ -843,6 +885,130 @@ class AspectRatioPlotHost(QWidget):
         x = (avail_w - w) // 2
         y = (avail_h - h) // 2
         self.child.setGeometry(x, y, w, h)
+
+
+class ScrollFadeOverlay(QWidget):
+    def __init__(self, parent=None, color="#F5F6FA", edge="top"):
+        super().__init__(parent)
+        self._color = QColor(color)
+        self._edge = edge
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        self.setAutoFillBackground(False)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        gradient = QLinearGradient(0, 0, 0, max(1, self.height()))
+        top = QColor(self._color)
+        middle = QColor(self._color)
+        bottom = QColor(self._color)
+        top.setAlpha(255)
+        middle.setAlpha(150)
+        bottom.setAlpha(0)
+        if self._edge == "bottom":
+            gradient.setColorAt(0.0, bottom)
+            gradient.setColorAt(0.45, middle)
+            gradient.setColorAt(1.0, top)
+        else:
+            gradient.setColorAt(0.0, top)
+            gradient.setColorAt(0.55, middle)
+            gradient.setColorAt(1.0, bottom)
+        painter.fillRect(self.rect(), gradient)
+
+
+class RoundedScrollArea(QScrollArea):
+    def __init__(self, *args, radius=8, shadow_padding=6, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._viewport_radius = radius
+        self._shadow_padding = shadow_padding
+        self._top_fade = None
+        self._bottom_fade = None
+        self._connect_scrollbar_signals(self.verticalScrollBar())
+
+    def setVerticalScrollBar(self, scrollbar):
+        super().setVerticalScrollBar(scrollbar)
+        self._connect_scrollbar_signals(scrollbar)
+
+    def _connect_scrollbar_signals(self, scrollbar):
+        scrollbar.valueChanged.connect(lambda _value: self._refresh_viewport_layers())
+        scrollbar.rangeChanged.connect(lambda _minimum, _maximum: self._refresh_viewport_layers())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._refresh_viewport_layers()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._refresh_viewport_layers()
+
+    def scrollContentsBy(self, dx, dy):
+        super().scrollContentsBy(dx, dy)
+        self._refresh_viewport_layers()
+
+    def _content_clip_bounds(self):
+        viewport = self.viewport()
+        width = viewport.width()
+        left = 0
+        right = width
+        child = self.widget()
+        child_layout = child.layout() if child is not None else None
+        if child is not None and child_layout is not None:
+            margins = child_layout.contentsMargins()
+            left = max(0, child.x() + margins.left())
+            right = min(width, child.x() + child.width() - margins.right())
+            if right <= left:
+                left = 0
+                right = width
+        return (
+            max(0, left - self._shadow_padding),
+            min(width, right + self._shadow_padding),
+        )
+
+    def _refresh_viewport_layers(self):
+        self._apply_viewport_mask()
+        self._position_edge_fades()
+
+    def _apply_viewport_mask(self):
+        viewport = self.viewport()
+        width = viewport.width()
+        height = viewport.height()
+        if width <= 0 or height <= 0:
+            viewport.clearMask()
+            return
+        left, right = self._content_clip_bounds()
+        radius = min(
+            self._viewport_radius + self._shadow_padding,
+            (right - left) // 2,
+            height // 2,
+        )
+        path = QPainterPath()
+        path.addRoundedRect(left, 0, right - left, height, radius, radius)
+        viewport.setMask(QRegion(path.toFillPolygon().toPolygon()))
+
+    def _position_edge_fades(self):
+        viewport = self.viewport()
+        width = viewport.width()
+        height = viewport.height()
+        if width <= 0 or height <= 0:
+            return
+        if self._top_fade is None:
+            self._top_fade = ScrollFadeOverlay(viewport, edge="top")
+        if self._bottom_fade is None:
+            self._bottom_fade = ScrollFadeOverlay(viewport, edge="bottom")
+        left, right = self._content_clip_bounds()
+        fade_height = min(24, height)
+        scrollbar = self.verticalScrollBar()
+        has_top_content = scrollbar.value() > scrollbar.minimum()
+        has_bottom_content = scrollbar.value() < scrollbar.maximum()
+        self._top_fade.setGeometry(left, 0, right - left, fade_height)
+        self._top_fade.setVisible(has_top_content)
+        self._top_fade.raise_()
+        self._top_fade.update()
+        self._bottom_fade.setGeometry(left, height - fade_height, right - left, fade_height)
+        self._bottom_fade.setVisible(has_bottom_content)
+        self._bottom_fade.raise_()
+        self._bottom_fade.update()
 
 
 class SmoothWheelScrollBar(QScrollBar):
@@ -1383,10 +1549,11 @@ class _InlineStatusBar:
 
 
 class ECDPage(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, embedded=False):
         super().__init__(parent)
         self.setMinimumSize(1000, 650)
         self.setStyleSheet(STYLESHEET)
+        self._embedded = embedded
 
         self._collection = None
         self._exp_wl_raw = None
@@ -1407,7 +1574,10 @@ class ECDPage(QWidget):
         toolbar_shell = QWidget()
         toolbar_shell.setObjectName("ecd_toolbar_shell")
         toolbar_layout = QVBoxLayout(toolbar_shell)
-        toolbar_layout.setContentsMargins(12, 10, 12, 10)
+        if self._embedded:
+            toolbar_layout.setContentsMargins(0, 10, 0, 10)
+        else:
+            toolbar_layout.setContentsMargins(12, 10, 12, 10)
         toolbar_layout.setSpacing(0)
 
         tb = QToolBar("Main")
@@ -1448,8 +1618,10 @@ class ECDPage(QWidget):
         hbox.setContentsMargins(0, 0, 0, 0)
         hbox.setSpacing(0)
 
-        scroll = QScrollArea()
+        scroll = RoundedScrollArea(radius=8)
         scroll.setObjectName("sidebar_scroll")
+        scroll.viewport().setObjectName("sidebar_scroll_viewport")
+        scroll.viewport().setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -1469,7 +1641,10 @@ class ECDPage(QWidget):
         sidebar.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
 
         self.slay = QVBoxLayout(sidebar)
-        self.slay.setContentsMargins(12, 10, 12, 14)
+        if self._embedded:
+            self.slay.setContentsMargins(0, 10, 12, 14)
+        else:
+            self.slay.setContentsMargins(12, 10, 12, 14)
         self.slay.setSpacing(10)
         self.slay.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._section_card_index = 0

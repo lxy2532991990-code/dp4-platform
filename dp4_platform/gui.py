@@ -141,8 +141,8 @@ else:
     from .structure_model import build_c_h_adjacency
 
 try:
-    from PyQt6.QtCore import QEasingCurve, QParallelAnimationGroup, QPoint, QPropertyAnimation, QSize, Qt, QThread, pyqtSignal
-    from PyQt6.QtGui import QAction, QColor
+    from PyQt6.QtCore import QEasingCurve, QParallelAnimationGroup, QPoint, QPropertyAnimation, QSize, Qt, QThread, QTimer, pyqtSignal
+    from PyQt6.QtGui import QAction, QColor, QPainter, QPainterPath
     from PyQt6.QtWidgets import (
         QApplication,
         QCheckBox,
@@ -206,6 +206,10 @@ def _load_ecd_page_class():
 
 
 NONE_OPTION = "(none)"
+
+
+def _style_asset_url(filename: str) -> str:
+    return str((Path(__file__).resolve().parent / "assets" / filename).resolve()).replace("\\", "/")
 
 
 def _get_existing_directory_with_tk(title: str, initial_path: str) -> str:
@@ -1123,6 +1127,13 @@ class CandidateCard(QFrame):
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self.setFixedSize(self.CARD_WIDTH, self.CARD_HEIGHT)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(12)
+        shadow.setOffset(0, 2)
+        shadow.setColor(QColor(15, 23, 42, 40))
+        self.setGraphicsEffect(shadow)
+
         self._build_ui()
         self.refresh()
 
@@ -1228,6 +1239,136 @@ class CandidateCard(QFrame):
             self.error_label.setVisible(False)
             self.error_label.setText("")
             self.error_label.setToolTip("")
+
+
+class CandidateViewportFrame(QWidget):
+    def __init__(self, parent: QWidget, color: str = "#E8F0FF"):
+        super().__init__(parent)
+        self._color = QColor(color)
+        self._frame_rect = (0, 0, 0, 0)
+        self._radius = 12
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        self.setAutoFillBackground(False)
+
+    def configure(
+        self,
+        left: int,
+        top: int,
+        right: int,
+        bottom: int,
+        radius: int,
+    ) -> None:
+        self._frame_rect = (left, top, right, bottom)
+        self._radius = radius
+        self.setVisible(right > left and bottom > top)
+        self.update()
+
+    def paintEvent(self, event) -> None:  # type: ignore[override]
+        super().paintEvent(event)
+        left, top, right, bottom = self._frame_rect
+        if right <= left or bottom <= top:
+            return
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        radius = min(self._radius, max(1, (right - left) // 2), max(1, (bottom - top) // 2))
+
+        outer = QPainterPath()
+        outer.addRect(0, 0, self.width(), self.height())
+        frame = QPainterPath()
+        frame.addRoundedRect(left, top, right - left, bottom - top, radius, radius)
+        painter.fillPath(outer.subtracted(frame), self._color)
+
+
+class CandidateScrollArea(QScrollArea):
+    def __init__(self, *args, radius: int = 12, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._clip_radius = radius
+        self._viewport_frame: CandidateViewportFrame | None = None
+        self._connect_horizontal_scrollbar(self.horizontalScrollBar())
+
+    def resizeEvent(self, event) -> None:  # type: ignore[override]
+        super().resizeEvent(event)
+        self._refresh_edge_overlay()
+
+    def showEvent(self, event) -> None:  # type: ignore[override]
+        super().showEvent(event)
+        self._refresh_edge_overlay()
+
+    def scrollContentsBy(self, dx: int, dy: int) -> None:  # type: ignore[override]
+        super().scrollContentsBy(dx, dy)
+        self._refresh_edge_overlay()
+
+    def setHorizontalScrollBar(self, scroll_bar) -> None:  # type: ignore[override]
+        super().setHorizontalScrollBar(scroll_bar)
+        self._connect_horizontal_scrollbar(scroll_bar)
+
+    def _connect_horizontal_scrollbar(self, scroll_bar) -> None:
+        scroll_bar.valueChanged.connect(lambda _value: self._refresh_edge_overlay())
+        scroll_bar.rangeChanged.connect(lambda _minimum, _maximum: self._refresh_edge_overlay())
+
+    def refresh_viewport_frame(self) -> None:
+        self._refresh_edge_overlay()
+        self.viewport().update()
+
+    def _card_band_bounds(self) -> tuple[int, int]:
+        viewport_height = self.viewport().height()
+        child = self.widget()
+        child_layout = child.layout() if child is not None else None
+        if child is None or child_layout is None:
+            return 0, viewport_height
+
+        margins = child_layout.contentsMargins()
+        available_height = max(0, child.height() - margins.top() - margins.bottom())
+        extra = max(0, available_height - CandidateCard.CARD_HEIGHT)
+        top = child.y() + margins.top() + extra // 2
+        bottom = top + CandidateCard.CARD_HEIGHT
+        top = max(0, min(viewport_height, top))
+        bottom = max(top, min(viewport_height, bottom))
+        if bottom <= top:
+            return 0, viewport_height
+        return top, bottom
+
+    def _card_frame_bounds(self) -> tuple[int, int, int, int]:
+        viewport_width = self.viewport().width()
+        top, bottom = self._card_band_bounds()
+        child = self.widget()
+        child_layout = child.layout() if child is not None else None
+        if child is None or child_layout is None:
+            return 0, top, viewport_width, bottom
+
+        margins = child_layout.contentsMargins()
+        spacing = max(0, child_layout.spacing())
+        card_count = 0
+        for index in range(child_layout.count()):
+            widget = child_layout.itemAt(index).widget()
+            if isinstance(widget, CandidateCard):
+                card_count += 1
+        if card_count <= 0:
+            return 0, top, 0, bottom
+
+        content_left = child.x() + margins.left()
+        content_right = content_left + card_count * CandidateCard.CARD_WIDTH + (card_count - 1) * spacing
+        left = max(0, min(viewport_width, content_left))
+        right = max(left, min(viewport_width, content_right))
+        return left, top, right, bottom
+
+    def _refresh_edge_overlay(self) -> None:
+        viewport = self.viewport()
+        width = viewport.width()
+        height = viewport.height()
+        if width <= 0 or height <= 0:
+            viewport.clearMask()
+            return
+        viewport.clearMask()
+
+        left, top, right, bottom = self._card_frame_bounds()
+        if self._viewport_frame is None:
+            self._viewport_frame = CandidateViewportFrame(viewport)
+        self._viewport_frame.setGeometry(0, 0, width, height)
+        self._viewport_frame.configure(left, top, right, bottom, self._clip_radius)
+        self._viewport_frame.raise_()
 
 
 class PairingDialog(QDialog):
@@ -1358,7 +1499,14 @@ class PairingDialog(QDialog):
         for column in (1, 2):
             widget = self.table.cellWidget(row_index, column)
             if isinstance(widget, QComboBox):
-                widget.setStyleSheet(f"background-color: {color.name()};")
+                tone = {
+                    "#fff3bf": "warning",
+                    "#ffc9c9": "danger",
+                }.get(color.name().lower(), "normal")
+                widget.setProperty("pairingTone", tone)
+                widget.style().unpolish(widget)
+                widget.style().polish(widget)
+                widget.update()
 
     def _refresh_row_states(self) -> None:
         used_opt: dict[str, int] = {}
@@ -1443,6 +1591,11 @@ class MainWindow(QMainWindow):
         width = max(width, self.scroll_area.viewport().width())
         self.scroll_content.setMinimumSize(width, 232)
         self.scroll_content.resize(width, 232)
+        self.scroll_content.updateGeometry()
+        self.scroll_layout.invalidate()
+        self.scroll_layout.activate()
+        if isinstance(self.scroll_area, CandidateScrollArea):
+            self.scroll_area.refresh_viewport_frame()
 
     def _rebuild_candidates_dict(self) -> None:
         self.candidates = {
@@ -1627,7 +1780,7 @@ class MainWindow(QMainWindow):
         candidates_body = QWidget()
         candidates_layout = QVBoxLayout(candidates_body)
         candidates_layout.setContentsMargins(0, 0, 0, 0)
-        self.scroll_area = QScrollArea()
+        self.scroll_area = CandidateScrollArea(radius=12)
         self.scroll_area.setObjectName("CandidateScrollArea")
         self.scroll_area.setFixedHeight(244)
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
@@ -1652,7 +1805,7 @@ class MainWindow(QMainWindow):
         self.scroll_area.setWidget(self.scroll_content)
         self.add_button = QPushButton("+ Add")
         self.add_button.setFixedSize(112, 56)
-        self.add_button.clicked.connect(lambda: self._add_candidate_card())
+        self.add_button.clicked.connect(lambda: self._add_candidate_card(scroll_to_new=True))
         candidates_row = QHBoxLayout()
         candidates_row.setContentsMargins(0, 0, 0, 0)
         candidates_row.setSpacing(12)
@@ -1829,7 +1982,7 @@ class MainWindow(QMainWindow):
 
         try:
             ECDPage = _load_ecd_page_class()
-            self.ecd_body = ECDPage(self)
+            self.ecd_body = ECDPage(self, embedded=True)
             layout.addWidget(self.ecd_body, 1)
         except Exception as exc:
             self.ecd_body = None
@@ -1924,8 +2077,7 @@ class MainWindow(QMainWindow):
             self.home_scroll_area.setUpdatesEnabled(True)
 
     def _apply_app_style(self) -> None:
-        self.setStyleSheet(
-            """
+        stylesheet = """
             QMainWindow, QWidget#AppShell, QWidget#HomePage, QWidget#HomeContent, QWidget#DP4Page, QWidget#ECDPage {
                 background: #f4f5f8;
                 color: #202124;
@@ -1978,7 +2130,7 @@ class MainWindow(QMainWindow):
             }
             QFrame#CandidateCard {
                 background: #ffffff;
-                border: 1px solid #d9dde5;
+                border: 0;
                 border-radius: 12px;
             }
             QFrame#CandidateCard[status="failed"] {
@@ -1998,11 +2150,84 @@ class MainWindow(QMainWindow):
                 padding: 0 6px;
                 color: #343a40;
             }
-            QLineEdit, QComboBox, QDoubleSpinBox, QPlainTextEdit, QListWidget, QTableWidget {
+            QLineEdit, QDoubleSpinBox, QPlainTextEdit, QListWidget, QTableWidget {
                 background: #ffffff;
                 border: 1px solid #d0d5dd;
                 border-radius: 8px;
                 padding: 6px;
+            }
+            QComboBox {
+                background: #ffffff;
+                border: 1px solid #d0d5dd;
+                border-radius: 20px;
+                color: #111827;
+                padding: 8px 42px 8px 16px;
+                min-height: 24px;
+                selection-background-color: #e8f0fe;
+                selection-color: #111827;
+            }
+            QComboBox:hover {
+                border-color: #b8c0cc;
+                background: #fbfcff;
+            }
+            QComboBox:focus, QComboBox:on {
+                border-color: #4A7BF7;
+                background: #ffffff;
+            }
+            QComboBox[pairingTone="warning"] {
+                background: #fff3bf;
+                border-color: #f2c94c;
+            }
+            QComboBox[pairingTone="danger"] {
+                background: #ffc9c9;
+                border-color: #f03e3e;
+            }
+            QComboBox::drop-down {
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 38px;
+                border: 0;
+            }
+            QComboBox::down-arrow {
+                image: url("__COMBO_ARROW_DOWN__");
+                width: 18px;
+                height: 18px;
+                margin-right: 14px;
+            }
+            QComboBox::down-arrow:on {
+                image: url("__COMBO_ARROW_UP__");
+            }
+            QComboBox QLineEdit {
+                background: transparent;
+                border: 0;
+                border-radius: 0;
+                padding: 0;
+                min-height: 0;
+            }
+            QComboBox QAbstractItemView, QComboBox QListView {
+                background: #ffffff;
+                border: 12px solid #ffffff;
+                border-radius: 28px;
+                padding: 2px;
+                color: #111827;
+                outline: 0;
+                selection-background-color: #e8f0fe;
+                selection-color: #111827;
+            }
+            QComboBox QAbstractItemView::item, QComboBox QListView::item {
+                min-height: 44px;
+                padding: 8px 22px;
+                border-radius: 20px;
+                margin: 4px;
+            }
+            QComboBox QAbstractItemView::item:hover, QComboBox QListView::item:hover {
+                background: #f4f7ff;
+                color: #111827;
+            }
+            QComboBox QAbstractItemView::item:selected, QComboBox QListView::item:selected {
+                background: #e8f0fe;
+                color: #111827;
+                font-weight: 600;
             }
             QTableWidget {
                 gridline-color: #e5e7eb;
@@ -2093,7 +2318,9 @@ class MainWindow(QMainWindow):
                 border-radius: 8px;
             }
             """
-        )
+        stylesheet = stylesheet.replace("__COMBO_ARROW_DOWN__", _style_asset_url("chevron-down.svg"))
+        stylesheet = stylesheet.replace("__COMBO_ARROW_UP__", _style_asset_url("chevron-up.svg"))
+        self.setStyleSheet(stylesheet)
 
     def _make_section_card(
         self,
@@ -2409,7 +2636,21 @@ class MainWindow(QMainWindow):
             state.scan_dirty = False
             self._request_candidate_scan(card, force=True)
 
-    def _add_candidate_card(self, state: CandidateCardState | None = None) -> None:
+    def _scroll_candidate_card_into_view(self, card: CandidateCard) -> None:
+        if card not in self.cards:
+            return
+        self._refresh_candidate_scroll_content_size()
+        self.scroll_area.ensureWidgetVisible(card, 16, 0)
+        if isinstance(self.scroll_area, CandidateScrollArea):
+            self.scroll_area.refresh_viewport_frame()
+        self.scroll_content.update()
+        self.scroll_area.viewport().update()
+
+    def _add_candidate_card(
+        self,
+        state: CandidateCardState | None = None,
+        scroll_to_new: bool = False,
+    ) -> None:
         card_state = state or CandidateCardState(name=f"isomer_{len(self.cards) + 1}")
         card = CandidateCard(card_state)
         card.remove_requested.connect(self._remove_candidate_card)
@@ -2427,6 +2668,8 @@ class MainWindow(QMainWindow):
             self._refresh_candidate_scroll_content_size()
             self.scroll_content.update()
             self.scroll_area.update()
+        if scroll_to_new:
+            QTimer.singleShot(0, lambda target=card: self._scroll_candidate_card_into_view(target))
         if card.state.directory:
             self._request_candidate_scan(card)
         else:
