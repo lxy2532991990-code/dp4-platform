@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
     QAbstractItemView, QGroupBox, QSplitter, QTextEdit
 )
 from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QPalette, QAction, QFont, QLinearGradient, QPainter, QPainterPath, QRegion
+from PyQt6.QtGui import QColor, QPalette, QAction, QFont, QPainter, QPainterPath
 
 import matplotlib
 matplotlib.use("QtAgg")
@@ -32,6 +32,14 @@ matplotlib.rcParams["axes.unicode_minus"] = False
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
+
+# Allow running this file directly (`python ecd_platform/gui.py`) as well as
+# via `python -m ecd_platform.gui` or as part of the dp4_platform launcher.
+if __package__ in (None, ""):
+    _pkg_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _pkg_root not in sys.path:
+        sys.path.insert(0, _pkg_root)
+    __package__ = "ecd_platform"
 
 from .config import ECDConfig, WeightingStrategy, ImagFreqPolicy, CDGauge, QMProgram
 from .matcher import ConformerMatcher, _glob_orca_outputs
@@ -142,12 +150,12 @@ QWidget#sidebar_inner {
 
 QFrame#section_card[altTone="0"] {
     background-color: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    border: none;
     border-radius: 8px;
 }
 QFrame#section_card[altTone="1"] {
     background-color: #EEF4FF;
-    border: 1px solid #D6E2F5;
+    border: none;
     border-radius: 8px;
 }
 QFrame#section_accent {
@@ -190,17 +198,38 @@ QLabel#hint_label {
 }
 
 QLineEdit, QDoubleSpinBox, QSpinBox {
-    background-color: #F9FAFB;
+    background: transparent;
     border: 1px solid #D1D5DB;
-    border-radius: 8px;
+    border-radius: 20px;
     color: #1F2937;
-    padding: 3px 8px;
+    padding: 7px 16px;
     font-size: 12px;
-    min-height: 24px;
+    min-height: 26px;
+    selection-background-color: #E8F0FE;
+    selection-color: #111827;
+}
+QSpinBox > QLineEdit, QDoubleSpinBox > QLineEdit,
+QSpinBox QLineEdit, QDoubleSpinBox QLineEdit {
+    background: transparent;
+    border: none;
+    padding: 0;
+    selection-background-color: #E8F0FE;
+    selection-color: #111827;
+}
+QLineEdit:hover, QDoubleSpinBox:hover, QSpinBox:hover {
+    border-color: #B8C0CC;
+    background: transparent;
 }
 QLineEdit:focus, QDoubleSpinBox:focus, QSpinBox:focus {
     border-color: #4A7BF7;
-    background-color: #FFFFFF;
+    background: transparent;
+}
+QDoubleSpinBox::up-button, QDoubleSpinBox::down-button,
+QSpinBox::up-button, QSpinBox::down-button {
+    border: none;
+    background: transparent;
+    width: 18px;
+    margin-right: 8px;
 }
 QComboBox {
     background-color: #F9FAFB;
@@ -236,9 +265,10 @@ QComboBox::down-arrow:on {
 }
 QComboBox QAbstractItemView, QComboBox QListView {
     background-color: #FFFFFF;
-    border: 12px solid #FFFFFF;
+    border: 0;
+    border-width: 0;
     border-radius: 28px;
-    padding: 2px;
+    padding: 12px;
     color: #1F2937;
     outline: 0;
     selection-background-color: #E8F0FE;
@@ -310,11 +340,11 @@ QPushButton#btn_browse:hover {
     background-color: #E5E7EB;
 }
 
-QWidget#external_spin {
-    background-color: transparent;
+QWidget#external_spin, QWidget#external_spin_buttons {
+    background: transparent;
 }
 QPushButton#spin_step_button {
-    background-color: #FFFFFF;
+    background: transparent;
     color: #475569;
     border: 1px solid #D1D5DB;
     border-radius: 6px;
@@ -327,14 +357,14 @@ QPushButton#spin_step_button {
     max-height: 15px;
 }
 QPushButton#spin_step_button:hover {
-    background-color: #F0F4FF;
+    background: transparent;
     border-color: #4A7BF7;
 }
 QPushButton#spin_step_button:pressed {
-    background-color: #E8F0FF;
+    background: transparent;
 }
 QPushButton#spin_step_button:disabled {
-    background-color: #F3F4F6;
+    background: transparent;
     color: #CBD5E1;
     border-color: #E2E8F0;
 }
@@ -887,43 +917,45 @@ class AspectRatioPlotHost(QWidget):
         self.child.setGeometry(x, y, w, h)
 
 
-class ScrollFadeOverlay(QWidget):
-    def __init__(self, parent=None, color="#F5F6FA", edge="top"):
+class RoundedViewportFrame(QWidget):
+    def __init__(self, parent=None, color="#F5F6FA"):
         super().__init__(parent)
         self._color = QColor(color)
-        self._edge = edge
+        self._frame_rect = (0, 0, 0, 0)
+        self._radius = 8
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setAutoFillBackground(False)
 
+    def configure(self, left, top, right, bottom, radius):
+        self._frame_rect = (left, top, right, bottom)
+        self._radius = radius
+        self.setVisible(right > left and bottom > top)
+        self.update()
+
     def paintEvent(self, event):
         super().paintEvent(event)
+        left, top, right, bottom = self._frame_rect
+        if right <= left or bottom <= top:
+            return
+
         painter = QPainter(self)
-        gradient = QLinearGradient(0, 0, 0, max(1, self.height()))
-        top = QColor(self._color)
-        middle = QColor(self._color)
-        bottom = QColor(self._color)
-        top.setAlpha(255)
-        middle.setAlpha(150)
-        bottom.setAlpha(0)
-        if self._edge == "bottom":
-            gradient.setColorAt(0.0, bottom)
-            gradient.setColorAt(0.45, middle)
-            gradient.setColorAt(1.0, top)
-        else:
-            gradient.setColorAt(0.0, top)
-            gradient.setColorAt(0.55, middle)
-            gradient.setColorAt(1.0, bottom)
-        painter.fillRect(self.rect(), gradient)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        radius = min(self._radius, max(1, (right - left) // 2), max(1, (bottom - top) // 2))
+
+        outer = QPainterPath()
+        outer.addRect(0, 0, self.width(), self.height())
+        frame = QPainterPath()
+        frame.addRoundedRect(left, top, right - left, bottom - top, radius, radius)
+        painter.fillPath(outer.subtracted(frame), self._color)
 
 
 class RoundedScrollArea(QScrollArea):
-    def __init__(self, *args, radius=8, shadow_padding=6, **kwargs):
+    def __init__(self, *args, radius=8, shadow_padding=0, **kwargs):
         super().__init__(*args, **kwargs)
         self._viewport_radius = radius
         self._shadow_padding = shadow_padding
-        self._top_fade = None
-        self._bottom_fade = None
+        self._viewport_frame = None
         self._connect_scrollbar_signals(self.verticalScrollBar())
 
     def setVerticalScrollBar(self, scrollbar):
@@ -966,49 +998,36 @@ class RoundedScrollArea(QScrollArea):
         )
 
     def _refresh_viewport_layers(self):
-        self._apply_viewport_mask()
-        self._position_edge_fades()
+        self.viewport().clearMask()
+        self._position_viewport_frame()
 
-    def _apply_viewport_mask(self):
+    def _frame_bounds(self):
         viewport = self.viewport()
         width = viewport.width()
         height = viewport.height()
         if width <= 0 or height <= 0:
-            viewport.clearMask()
-            return
+            return 0, 0, 0, 0
         left, right = self._content_clip_bounds()
-        radius = min(
+        return left, 0, right, height
+
+    def _position_viewport_frame(self):
+        viewport = self.viewport()
+        width = viewport.width()
+        height = viewport.height()
+        if width <= 0 or height <= 0:
+            return
+        if self._viewport_frame is None:
+            self._viewport_frame = RoundedViewportFrame(viewport)
+        left, top, right, bottom = self._frame_bounds()
+        self._viewport_frame.setGeometry(0, 0, width, height)
+        self._viewport_frame.configure(
+            left,
+            top,
+            right,
+            bottom,
             self._viewport_radius + self._shadow_padding,
-            (right - left) // 2,
-            height // 2,
         )
-        path = QPainterPath()
-        path.addRoundedRect(left, 0, right - left, height, radius, radius)
-        viewport.setMask(QRegion(path.toFillPolygon().toPolygon()))
-
-    def _position_edge_fades(self):
-        viewport = self.viewport()
-        width = viewport.width()
-        height = viewport.height()
-        if width <= 0 or height <= 0:
-            return
-        if self._top_fade is None:
-            self._top_fade = ScrollFadeOverlay(viewport, edge="top")
-        if self._bottom_fade is None:
-            self._bottom_fade = ScrollFadeOverlay(viewport, edge="bottom")
-        left, right = self._content_clip_bounds()
-        fade_height = min(24, height)
-        scrollbar = self.verticalScrollBar()
-        has_top_content = scrollbar.value() > scrollbar.minimum()
-        has_bottom_content = scrollbar.value() < scrollbar.maximum()
-        self._top_fade.setGeometry(left, 0, right - left, fade_height)
-        self._top_fade.setVisible(has_top_content)
-        self._top_fade.raise_()
-        self._top_fade.update()
-        self._bottom_fade.setGeometry(left, height - fade_height, right - left, fade_height)
-        self._bottom_fade.setVisible(has_bottom_content)
-        self._bottom_fade.raise_()
-        self._bottom_fade.update()
+        self._viewport_frame.raise_()
 
 
 class SmoothWheelScrollBar(QScrollBar):
@@ -1041,8 +1060,22 @@ class NoWheelDoubleSpinBox(QDoubleSpinBox):
 
 
 class NoWheelComboBox(QComboBox):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._polish_popup_view()
+
+    def showPopup(self):
+        self._polish_popup_view()
+        super().showPopup()
+
     def wheelEvent(self, e):
         e.ignore()
+
+    def _polish_popup_view(self):
+        view = self.view()
+        view.setFrameShape(QFrame.Shape.NoFrame)
+        view.setLineWidth(0)
+        view.setMidLineWidth(0)
 
 
 class LabeledSlider(QWidget):
@@ -1615,7 +1648,7 @@ class ECDPage(QWidget):
         central = QWidget()
         central.setStyleSheet("background-color: #F5F6FA;")
         hbox = QHBoxLayout(central)
-        hbox.setContentsMargins(0, 0, 0, 0)
+        hbox.setContentsMargins(0, 0, 0, 8)
         hbox.setSpacing(0)
 
         scroll = RoundedScrollArea(radius=8)
@@ -1642,15 +1675,23 @@ class ECDPage(QWidget):
 
         self.slay = QVBoxLayout(sidebar)
         if self._embedded:
-            self.slay.setContentsMargins(0, 10, 12, 14)
+            self.slay.setContentsMargins(0, 0, 12, 0)
         else:
-            self.slay.setContentsMargins(12, 10, 12, 14)
+            self.slay.setContentsMargins(12, 0, 12, 0)
         self.slay.setSpacing(10)
         self.slay.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._section_card_index = 0
         self._build_sidebar()
 
         scroll.setWidget(sidebar)
+
+        left_shell = QWidget()
+        left_shell.setStyleSheet("background-color: #F5F6FA;")
+        left_shell.setFixedWidth(392)
+        left_layout = QVBoxLayout(left_shell)
+        left_layout.setContentsMargins(0, 8, 0, 13)
+        left_layout.setSpacing(0)
+        left_layout.addWidget(scroll)
 
         right = QWidget()
         right.setStyleSheet("background-color: #F5F6FA;")
@@ -1689,7 +1730,7 @@ class ECDPage(QWidget):
         self.progress.setValue(0)
         rl.addWidget(self.progress)
 
-        hbox.addWidget(scroll, 0)
+        hbox.addWidget(left_shell, 0)
         hbox.addWidget(right, 1)
 
         page_layout.addWidget(central, 1)
@@ -1789,7 +1830,7 @@ class ECDPage(QWidget):
         self.sp_sgw.setRange(3, 101)
         self.sp_sgw.setValue(15)
         self.sp_sgw.setSingleStep(2)
-        r3.addWidget(self._external_stepper(self.sp_sgw, 56))
+        r3.addWidget(self._external_stepper(self.sp_sgw, 64))
 
         fl4 = QLabel("order")
         fl4.setObjectName("field_label")
@@ -1798,7 +1839,7 @@ class ECDPage(QWidget):
         self.sp_sgo = NoWheelSpinBox()
         self.sp_sgo.setRange(1, 10)
         self.sp_sgo.setValue(3)
-        r3.addWidget(self._external_stepper(self.sp_sgo, 48))
+        r3.addWidget(self._external_stepper(self.sp_sgo, 64))
 
         r3.addStretch()
         L.addLayout(r3)
@@ -1871,19 +1912,21 @@ class ECDPage(QWidget):
         L = self._section_card("DISPLAY OPTIONS", "#64748B")
         self.ck_show_title = QCheckBox("Show title")
         self.ck_show_title.setChecked(True)
-        L.addWidget(self.ck_show_title)
-
         self.ck_show_params = QCheckBox("Show parameters")
         self.ck_show_params.setChecked(True)
-        L.addWidget(self.ck_show_params)
-
         self.ck_show_top_axis = QCheckBox("Show top energy axis")
         self.ck_show_top_axis.setChecked(True)
-        L.addWidget(self.ck_show_top_axis)
-
         self.ck_show_similarity = QCheckBox("Show similarity text")
         self.ck_show_similarity.setChecked(True)
-        L.addWidget(self.ck_show_similarity)
+        for cb in (
+            self.ck_show_title,
+            self.ck_show_params,
+            self.ck_show_top_axis,
+            self.ck_show_similarity,
+        ):
+            cb.setAutoFillBackground(False)
+            cb.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+            L.addWidget(cb)
 
         self._connect_live_preview_controls()
 
@@ -1904,15 +1947,13 @@ class ECDPage(QWidget):
         self._section_card_index += 1
         if alt_tone == 0:
             bg_color = "#FFFFFF"
-            border_color = "#E2E8F0"
         else:
             bg_color = "#E8F0FF"
-            border_color = "#CBDCF8"
         card.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         card.setStyleSheet(
             f"QFrame#section_card {{ "
             f"background-color: {bg_color}; "
-            f"border: 1px solid {border_color}; "
+            f"border: none; "
             f"border-radius: 8px; }}"
             f"QFrame#section_card QLabel {{ "
             f"background-color: {bg_color}; "
@@ -1925,6 +1966,79 @@ class ECDPage(QWidget):
             f"background-color: {bg_color}; }}"
             f"QFrame#section_card QLabel#hint_label {{ "
             f"background-color: {bg_color}; }}"
+            f"QFrame#section_card QLineEdit, "
+            f"QFrame#section_card QSpinBox, "
+            f"QFrame#section_card QDoubleSpinBox {{ "
+            f"background-color: {bg_color}; "
+            f"border: 1px solid #D1D5DB; "
+            f"border-radius: 20px; "
+            f"color: #1F2937; "
+            f"padding: 7px 16px; "
+            f"font-size: 12px; "
+            f"min-height: 26px; "
+            f"selection-background-color: #E8F0FE; "
+            f"selection-color: #111827; }}"
+            f"QFrame#section_card QSpinBox > QLineEdit, "
+            f"QFrame#section_card QDoubleSpinBox > QLineEdit, "
+            f"QFrame#section_card QSpinBox QLineEdit, "
+            f"QFrame#section_card QDoubleSpinBox QLineEdit {{ "
+            f"background-color: {bg_color}; "
+            f"border: none; "
+            f"padding: 0; }}"
+            f"QFrame#section_card QLineEdit:hover, "
+            f"QFrame#section_card QSpinBox:hover, "
+            f"QFrame#section_card QDoubleSpinBox:hover {{ "
+            f"border-color: #B8C0CC; }}"
+            f"QFrame#section_card QLineEdit:focus, "
+            f"QFrame#section_card QSpinBox:focus, "
+            f"QFrame#section_card QDoubleSpinBox:focus {{ "
+            f"border-color: #4A7BF7; }}"
+            f"QFrame#section_card QPushButton#spin_step_button {{ "
+            f"background-color: {bg_color}; "
+            f"color: #475569; "
+            f"border: 1px solid #D1D5DB; "
+            f"border-radius: 6px; "
+            f"padding: 0; "
+            f"font-size: 10px; "
+            f"font-weight: 700; "
+            f"min-width: 24px; "
+            f"max-width: 24px; "
+            f"min-height: 15px; "
+            f"max-height: 15px; }}"
+            f"QFrame#section_card QPushButton#spin_step_button:hover {{ "
+            f"border-color: #4A7BF7; }}"
+            f"QFrame#section_card QPushButton#spin_step_button:disabled {{ "
+            f"color: #CBD5E1; "
+            f"border-color: #E2E8F0; }}"
+            f"QFrame#section_card QWidget#external_spin, "
+            f"QFrame#section_card QWidget#external_spin_buttons {{ "
+            f"background-color: {bg_color}; }}"
+            f"QFrame#section_card QCheckBox {{ "
+            f"background-color: {bg_color}; "
+            f"color: #374151; "
+            f"font-size: 12px; "
+            f"spacing: 6px; "
+            f"padding: 2px 0; }}"
+            f"QFrame#section_card QCheckBox::indicator {{ "
+            f"width: 14px; "
+            f"height: 14px; }}"
+            f"QFrame#section_card QSlider {{ "
+            f"background-color: {bg_color}; }}"
+            f"QFrame#section_card QComboBox {{ "
+            f"background-color: {bg_color}; "
+            f"border: 1px solid #D1D5DB; "
+            f"border-radius: 20px; "
+            f"color: #1F2937; "
+            f"padding: 7px 40px 7px 16px; "
+            f"font-size: 12px; "
+            f"min-height: 26px; "
+            f"selection-background-color: #E8F0FE; "
+            f"selection-color: #111827; }}"
+            f"QFrame#section_card QComboBox:hover {{ "
+            f"border-color: #B8C0CC; }}"
+            f"QFrame#section_card QComboBox:focus, "
+            f"QFrame#section_card QComboBox:on {{ "
+            f"border-color: #4A7BF7; }}"
         )
         card.setFrameShape(QFrame.Shape.NoFrame)
         card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
@@ -1962,6 +2076,7 @@ class ECDPage(QWidget):
 
         le = QLineEdit()
         le.setPlaceholderText("Click ... to select")
+        self._make_input_transparent(le)
         row.addWidget(le, 1)
 
         btn = QPushButton("...")
@@ -2000,6 +2115,7 @@ class ECDPage(QWidget):
 
         le = QLineEdit()
         le.setText(default_text)
+        self._make_input_transparent(le)
         L.addWidget(le)
         return le
 
@@ -2014,20 +2130,42 @@ class ECDPage(QWidget):
         L.addWidget(cb)
         return cb
 
+    @staticmethod
+    def _make_input_transparent(widget) -> None:
+        """Disable native frame painting and palette-based background fill on a
+        QLineEdit/QSpinBox-family widget. Visual styling (border, radius, padding)
+        is handled by the parent section_card's stylesheet so it can match the
+        card's bg_color exactly — applying a local stylesheet here would shadow
+        that and reintroduce the Fusion native fill."""
+        widget.setAutoFillBackground(False)
+        widget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        if hasattr(widget, "setFrame"):
+            widget.setFrame(False)
+        inner = getattr(widget, "lineEdit", lambda: None)()
+        if inner is not None and inner is not widget:
+            inner.setAutoFillBackground(False)
+            inner.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+            if hasattr(inner, "setFrame"):
+                inner.setFrame(False)
+
     def _external_stepper(self, spin: QAbstractSpinBox, display_width: int) -> QWidget:
         spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         spin.setFixedWidth(display_width)
-        spin.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        spin.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
+        self._make_input_transparent(spin)
 
         wrapper = QWidget()
         wrapper.setObjectName("external_spin")
         wrapper.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        wrapper.setAutoFillBackground(False)
         row = QHBoxLayout(wrapper)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(4)
         row.addWidget(spin)
 
         buttons = QWidget()
+        buttons.setObjectName("external_spin_buttons")
+        buttons.setAutoFillBackground(False)
         buttons_layout = QVBoxLayout(buttons)
         buttons_layout.setContentsMargins(0, 0, 0, 0)
         buttons_layout.setSpacing(2)
@@ -2037,6 +2175,8 @@ class ECDPage(QWidget):
         for button in (up_button, down_button):
             button.setObjectName("spin_step_button")
             button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            button.setAutoFillBackground(False)
+            button.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
             buttons_layout.addWidget(button)
 
         up_button.clicked.connect(spin.stepUp)

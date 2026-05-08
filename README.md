@@ -1,6 +1,6 @@
-# DP4 Platform
+# StereoSpectra Platform
 
-Standalone ORCA/Gaussian DP4-style workflow for candidate isomer ranking from NMR shielding calculations.
+DP4, NMR, and ECD assignment suite for candidate isomer ranking and spectra-assisted configuration analysis.
 
 ## Scope
 

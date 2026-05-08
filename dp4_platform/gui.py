@@ -142,7 +142,7 @@ else:
 
 try:
     from PyQt6.QtCore import QEasingCurve, QParallelAnimationGroup, QPoint, QPropertyAnimation, QSize, Qt, QThread, QTimer, pyqtSignal
-    from PyQt6.QtGui import QAction, QColor, QPainter, QPainterPath
+    from PyQt6.QtGui import QAction, QColor, QPainter, QPainterPath, QPixmap
     from PyQt6.QtWidgets import (
         QApplication,
         QCheckBox,
@@ -168,6 +168,7 @@ try:
         QPushButton,
         QScrollArea,
         QSizePolicy,
+        QSpinBox,
         QSplitter,
         QStackedWidget,
         QStatusBar,
@@ -267,6 +268,38 @@ def _get_existing_directory(parent: QWidget, title: str, start_path: str) -> str
         # options=QFileDialog.Option.ShowDirsOnly  # Usually not needed for getExistingDirectory
     )
     return result if result else ""
+
+
+class NoWheelComboBox(QComboBox):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._polish_popup_view()
+
+    def showPopup(self) -> None:  # type: ignore[override]
+        self._polish_popup_view()
+        super().showPopup()
+
+    def wheelEvent(self, event) -> None:  # type: ignore[override]
+        if self.view().isVisible():
+            super().wheelEvent(event)
+            return
+        event.ignore()
+
+    def _polish_popup_view(self) -> None:
+        view = self.view()
+        view.setFrameShape(QFrame.Shape.NoFrame)
+        view.setLineWidth(0)
+        view.setMidLineWidth(0)
+
+
+class NoWheelDoubleSpinBox(QDoubleSpinBox):
+    def wheelEvent(self, event) -> None:  # type: ignore[override]
+        event.ignore()
+
+
+class NoWheelSpinBox(QSpinBox):
+    def wheelEvent(self, event) -> None:  # type: ignore[override]
+        event.ignore()
 
 
 class CandidateScanWorker(QThread):
@@ -372,7 +405,7 @@ class AutoAssignDialog(QDialog):
 
         top_row = QGridLayout()
         top_row.addWidget(QLabel("候选结构"), 0, 0)
-        self.cmb_candidate = QComboBox()
+        self.cmb_candidate = NoWheelComboBox()
         for state in self.candidate_states:
             self.cmb_candidate.addItem(f"{state.name}  ({state.directory})", state)
         top_row.addWidget(self.cmb_candidate, 0, 1, 1, 3)
@@ -398,7 +431,7 @@ class AutoAssignDialog(QDialog):
         top_row.addWidget(self.status_label, 3, 0, 1, 3)
 
         top_row.addWidget(QLabel("Assignment mode"), 4, 0)
-        self.cmb_assignment_mode = QComboBox()
+        self.cmb_assignment_mode = NoWheelComboBox()
         self.cmb_assignment_mode.addItem("13C", "13C")
         self.cmb_assignment_mode.addItem("1H", "1H")
         self.cmb_assignment_mode.currentIndexChanged.connect(self._on_assignment_mode_changed)
@@ -963,6 +996,38 @@ class PipelineWorker(QThread):
             self.error.emit(str(exc))
 
 
+class ModuleCardPreview(QFrame):
+    def __init__(self, image_path: str):
+        super().__init__()
+        self.setObjectName("ModuleCardPreview")
+        self.setMinimumHeight(235)
+        self._pixmap = QPixmap(image_path)
+
+    def paintEvent(self, event) -> None:  # type: ignore[override]
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        radius = 18
+        rect = self.rect()
+        clip_path = QPainterPath()
+        clip_path.addRoundedRect(0, 0, rect.width(), rect.height() + radius, radius, radius)
+        painter.fillPath(clip_path, QColor("#ffffff"))
+
+        if self._pixmap.isNull():
+            return
+
+        painter.setClipPath(clip_path)
+        padding = 6
+        available_width = max(1, rect.width() - padding * 2)
+        available_height = max(1, rect.height() - padding * 2)
+        scale = min(available_width / self._pixmap.width(), available_height / self._pixmap.height())
+        target_width = int(self._pixmap.width() * scale)
+        target_height = int(self._pixmap.height() * scale)
+        x = (rect.width() - target_width) // 2
+        y = (rect.height() - target_height) // 2
+        painter.drawPixmap(x, y, target_width, target_height, self._pixmap)
+
+
 class ModuleCard(QFrame):
     activated = pyqtSignal(str)
 
@@ -974,6 +1039,7 @@ class ModuleCard(QFrame):
         status_text: str,
         enabled: bool,
         accent_color: str,
+        image_path: str | None = None,
     ):
         super().__init__()
         self.module_id = module_id
@@ -998,22 +1064,25 @@ class ModuleCard(QFrame):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        preview = QFrame()
-        preview.setObjectName("ModuleCardPreview")
-        preview.setMinimumHeight(235)
-        preview_layout = QVBoxLayout(preview)
-        preview_layout.setContentsMargins(28, 26, 28, 22)
-        preview_layout.setSpacing(12)
+        if image_path:
+            preview = ModuleCardPreview(image_path)
+        else:
+            preview = QFrame()
+            preview.setObjectName("ModuleCardPreview")
+            preview.setMinimumHeight(235)
+            preview_layout = QVBoxLayout(preview)
+            preview_layout.setContentsMargins(28, 26, 28, 22)
+            preview_layout.setSpacing(12)
 
-        accent = QFrame()
-        accent.setFixedSize(42, 5)
-        accent.setStyleSheet(f"background: {accent_color}; border-radius: 2px;")
-        preview_layout.addWidget(accent)
-        preview_layout.addStretch(1)
+            accent = QFrame()
+            accent.setFixedSize(42, 5)
+            accent.setStyleSheet(f"background: {accent_color}; border-radius: 2px;")
+            preview_layout.addWidget(accent)
+            preview_layout.addStretch(1)
 
-        preview_title = QLabel(title)
-        preview_title.setObjectName("ModuleCardPreviewTitle")
-        preview_layout.addWidget(preview_title)
+            preview_title = QLabel(title)
+            preview_title.setObjectName("ModuleCardPreviewTitle")
+            preview_layout.addWidget(preview_title)
         layout.addWidget(preview)
 
         body = QWidget()
@@ -1442,7 +1511,7 @@ class PairingDialog(QDialog):
         self._populate_rows(self.auto_rows_by_strategy.get(strategy, []))
 
     def _combo_for_paths(self, paths: list[str], selected: str | None) -> QComboBox:
-        combo = QComboBox()
+        combo = NoWheelComboBox()
         combo.addItem(NONE_OPTION, None)
         for path in paths:
             combo.addItem(Path(path).name, path)
@@ -1567,7 +1636,7 @@ class PairingDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("DP4 Platform")
+        self.setWindowTitle("StereoSpectra Platform")
         self.resize(1240, 820)
         self.worker: PipelineWorker | None = None
         self.scan_workers: dict[int, CandidateScanWorker] = {}
@@ -1660,9 +1729,9 @@ class MainWindow(QMainWindow):
         header = QHBoxLayout()
         title_block = QVBoxLayout()
         title_block.setSpacing(6)
-        title = QLabel("DP4 Platform")
+        title = QLabel("StereoSpectra Platform")
         title.setObjectName("HomeTitle")
-        subtitle = QLabel("Choose a calculation workflow")
+        subtitle = QLabel("DP4 / NMR / ECD Assignment Suite")
         subtitle.setObjectName("HomeSubtitle")
         title_block.addWidget(title)
         title_block.addWidget(subtitle)
@@ -1678,6 +1747,7 @@ class MainWindow(QMainWindow):
         self._home_layout_columns: int | None = None
         self._home_layout_card_height: int | None = None
 
+        asset_dir = Path(__file__).resolve().parent / "assets"
         modules = [
             (
                 "dp4",
@@ -1686,6 +1756,7 @@ class MainWindow(QMainWindow):
                 "Ready",
                 True,
                 "#ff6b1a",
+                str(asset_dir / "module-dp4-preview.png"),
             ),
             (
                 "ecd",
@@ -1694,6 +1765,7 @@ class MainWindow(QMainWindow):
                 "Ready",
                 True,
                 "#4c6ef5",
+                str(asset_dir / "module-ecd-preview.png"),
             ),
             (
                 "ir",
@@ -1702,10 +1774,11 @@ class MainWindow(QMainWindow):
                 "Coming soon",
                 False,
                 "#12b886",
+                None,
             ),
         ]
-        for module_id, title, subtitle, status_text, enabled, accent_color in modules:
-            card = ModuleCard(module_id, title, subtitle, status_text, enabled, accent_color)
+        for module_id, title, subtitle, status_text, enabled, accent_color, image_path in modules:
+            card = ModuleCard(module_id, title, subtitle, status_text, enabled, accent_color, image_path)
             card.activated.connect(self._handle_module_activated)
             self.module_cards.append(card)
 
@@ -1842,20 +1915,20 @@ class MainWindow(QMainWindow):
         nuclei_widget = QWidget()
         nuclei_widget.setLayout(nuclei_row)
 
-        self.cmb_weighting = QComboBox()
+        self.cmb_weighting = NoWheelComboBox()
         self.cmb_weighting.setMinimumHeight(34)
         for strategy in WeightingStrategy:
             self.cmb_weighting.addItem(strategy.value, strategy)
         self.cmb_weighting.currentIndexChanged.connect(self._refresh_status_bar)
 
-        self.cmb_program_mode = QComboBox()
+        self.cmb_program_mode = NoWheelComboBox()
         self.cmb_program_mode.setMinimumHeight(34)
         self.cmb_program_mode.addItem("Auto", "auto")
         self.cmb_program_mode.addItem("ORCA", "orca")
         self.cmb_program_mode.addItem("Gaussian", "gaussian")
         self.cmb_program_mode.currentIndexChanged.connect(self._handle_program_mode_changed)
 
-        self.spin_temp = QDoubleSpinBox()
+        self.spin_temp = NoWheelDoubleSpinBox()
         self.spin_temp.setMinimumHeight(34)
         self.spin_temp.setDecimals(2)
         self.spin_temp.setRange(1.0, 5000.0)
@@ -1891,7 +1964,7 @@ class MainWindow(QMainWindow):
         self.ed_tms_file = QLineEdit()
         self.ed_tms_file.setMinimumHeight(34)
         self.ed_tms_file.setPlaceholderText("TMS calculation output file (optional)")
-        self.cmb_reference_solvent = QComboBox()
+        self.cmb_reference_solvent = NoWheelComboBox()
         self.cmb_reference_solvent.setMinimumHeight(34)
         self.cmb_reference_solvent.setEditable(True)
         self.cmb_reference_solvent.addItem("Auto", "")
@@ -1939,7 +2012,7 @@ class MainWindow(QMainWindow):
         # result mode switcher
         mode_row = QHBoxLayout()
         mode_row.addWidget(QLabel("Result mode:"))
-        self.cmb_result_mode = QComboBox()
+        self.cmb_result_mode = NoWheelComboBox()
         self.cmb_result_mode.setMinimumHeight(34)
         self.cmb_result_mode.addItem("Scaled chemical shift", "scaled")
         self.cmb_result_mode.addItem("TMS referenced unscaled shift", "tms")
@@ -2150,7 +2223,32 @@ class MainWindow(QMainWindow):
                 padding: 0 6px;
                 color: #343a40;
             }
-            QLineEdit, QDoubleSpinBox, QPlainTextEdit, QListWidget, QTableWidget {
+            QLineEdit, QDoubleSpinBox, QSpinBox {
+                background: #ffffff;
+                border: 1px solid #d0d5dd;
+                border-radius: 20px;
+                color: #111827;
+                padding: 8px 16px;
+                min-height: 24px;
+                selection-background-color: #e8f0fe;
+                selection-color: #111827;
+            }
+            QLineEdit:hover, QDoubleSpinBox:hover, QSpinBox:hover {
+                border-color: #b8c0cc;
+                background: #fbfcff;
+            }
+            QLineEdit:focus, QDoubleSpinBox:focus, QSpinBox:focus {
+                border-color: #4A7BF7;
+                background: #ffffff;
+            }
+            QDoubleSpinBox::up-button, QDoubleSpinBox::down-button,
+            QSpinBox::up-button, QSpinBox::down-button {
+                border: 0;
+                background: transparent;
+                width: 18px;
+                margin-right: 8px;
+            }
+            QPlainTextEdit, QListWidget, QTableWidget {
                 background: #ffffff;
                 border: 1px solid #d0d5dd;
                 border-radius: 8px;
@@ -2206,9 +2304,10 @@ class MainWindow(QMainWindow):
             }
             QComboBox QAbstractItemView, QComboBox QListView {
                 background: #ffffff;
-                border: 12px solid #ffffff;
+                border: 0;
+                border-width: 0;
                 border-radius: 28px;
-                padding: 2px;
+                padding: 12px;
                 color: #111827;
                 outline: 0;
                 selection-background-color: #e8f0fe;
@@ -2440,7 +2539,13 @@ class MainWindow(QMainWindow):
         action_new.triggered.connect(self._new_project)
         action_open.triggered.connect(self._open_project)
         action_save.triggered.connect(self._save_project)
-        action_about.triggered.connect(lambda: QMessageBox.information(self, "DP4 Platform", "DP4 project manager and runner"))
+        action_about.triggered.connect(
+            lambda: QMessageBox.information(
+                self,
+                "StereoSpectra Platform",
+                "DP4, NMR, and ECD assignment suite",
+            )
+        )
         file_menu.addAction(action_new)
         file_menu.addAction(action_open)
         file_menu.addAction(action_save)
@@ -2929,7 +3034,7 @@ class MainWindow(QMainWindow):
     def _handle_error(self, message: str) -> None:
         self.progress_bar.setVisible(False)
         self.append_log(f"Error: {message}")
-        QMessageBox.critical(self, "DP4 Platform", message)
+        QMessageBox.critical(self, "StereoSpectra Platform", message)
         self._update_run_readiness()
 
     def _handle_result(self, result) -> None:
